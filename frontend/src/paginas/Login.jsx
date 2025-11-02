@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Button, Spinner } from "react-bootstrap";
 import api from "../api/axiosConfig";
+import Swal from "sweetalert2";
 import "boxicons/css/boxicons.min.css";
 import "../assets/estilos/login.css";
 
@@ -10,12 +11,21 @@ export default function Login() {
   const [usuario, setUsuario] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
+
+    if (!usuario || !contrasena) {
+      Swal.fire({
+        icon: "warning",
+        title: "Campos vacíos",
+        text: "Por favor completa ambos campos antes de continuar ⚠️",
+        confirmButtonColor: "#f39c12",
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
       // Petición al backend
@@ -29,11 +39,26 @@ export default function Login() {
       localStorage.setItem("token", token);
       localStorage.setItem("usuario", usuario);
 
-      // Redirigimos a la página principal
-      navigate("/inicio");
+      // ✅ Alerta de éxito
+      Swal.fire({
+        icon: "success",
+        title: "¡Bienvenido!",
+        text: `Inicio de sesión exitoso. Hola, ${usuario} 👋`,
+        confirmButtonColor: "#28a745",
+        timer: 2000,
+        timerProgressBar: true,
+      }).then(() => {
+        navigate("/inicio");
+      });
     } catch (err) {
       console.error(err);
-      setError("Usuario o contraseña incorrectos ❌");
+      // ❌ Alerta de error
+      Swal.fire({
+        icon: "error",
+        title: "Error de autenticación",
+        text: "Usuario o contraseña incorrectos ❌",
+        confirmButtonColor: "#dc3545",
+      });
     } finally {
       setLoading(false);
     }
@@ -55,13 +80,6 @@ export default function Login() {
 
         <div className="form-box-login">
           <h2 className="animation-login" style={{ "--D": 0 }}>Iniciar Sesión</h2>
-
-          {error && (
-            <div className="alert-error-login visible animation-login" style={{ "--D": 1 }}>
-              <i className="bx bxs-error"></i>
-              <span>{error}</span>
-            </div>
-          )}
 
           <Form onSubmit={handleSubmit}>
             <div className="input-box-login animation-login" style={{ "--D": 2 }}>

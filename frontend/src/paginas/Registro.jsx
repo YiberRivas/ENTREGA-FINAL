@@ -1,17 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Form, Button, Spinner, ProgressBar } from "react-bootstrap";
+import { Form, Button, Spinner, ProgressBar, Row, Col } from "react-bootstrap";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import Swal from "sweetalert2";
 import "boxicons/css/boxicons.min.css";
-import "../assets/estilos/login.css";
+import "../assets/estilos/registro.css";
 
 export default function Registro() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [exito, setExito] = useState("");
 
   const [usuario, setUsuario] = useState("");
   const [contrasena, setContrasena] = useState("");
@@ -29,10 +28,14 @@ export default function Registro() {
 
   const handleNext = () => {
     if (!usuario || !persona.nombres || !persona.apellidos || !persona.correo) {
-      setError("Completa todos los campos antes de continuar ⚠️");
+      Swal.fire({
+        icon: "warning",
+        title: "Campos incompletos",
+        text: "Completa todos los campos antes de continuar ⚠️",
+        confirmButtonColor: "#f39c12",
+      });
       return;
     }
-    setError("");
     setStep(2);
   };
 
@@ -40,11 +43,14 @@ export default function Registro() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setExito("");
 
     if (contrasena !== confirmar) {
-      setError("Las contraseñas no coinciden ❌");
+      Swal.fire({
+        icon: "error",
+        title: "Contraseñas no coinciden",
+        text: "Verifica que ambas contraseñas sean iguales ❌",
+        confirmButtonColor: "#dc3545",
+      });
       return;
     }
 
@@ -63,17 +69,27 @@ export default function Registro() {
       });
 
       if (response.status === 200) {
-        setExito(`Usuario "${usuario}" registrado correctamente ✅`);
-        setTimeout(() => navigate("/login"), 2000);
+        Swal.fire({
+          icon: "success",
+          title: "¡Registro exitoso!",
+          text: `Usuario "${usuario}" registrado correctamente ✅`,
+          confirmButtonColor: "#28a745",
+          timer: 2000,
+          timerProgressBar: true,
+        }).then(() => navigate("/login"));
       }
     } catch (err) {
-      setError("Error al registrar. Verifica los datos o si el usuario ya existe ❌");
+      Swal.fire({
+        icon: "error",
+        title: "Error en el registro",
+        text: "Verifica los datos o si el usuario ya existe ❌",
+        confirmButtonColor: "#dc3545",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Animaciones de entrada/salida
   const slideVariants = {
     initial: (direction) => ({
       x: direction > 0 ? 300 : -300,
@@ -104,30 +120,19 @@ export default function Registro() {
         <div className="curved-shape-login"></div>
 
         <div className="form-box-login">
-          <h2 className="animation-login" style={{ "--D": 0 }}>
+          <h2 className="animation-login">
             Crear Cuenta ({step}/2)
           </h2>
 
           <ProgressBar
             now={step === 1 ? 50 : 100}
             label={step === 1 ? "Datos personales" : "Credenciales"}
-            className="mb-3"
+            className="mb-4"
           />
 
-          {error && (
-            <div className="alert-error-login visible animation-login" style={{ "--D": 1 }}>
-              <i className="bx bxs-error"></i>
-              <span>{error}</span>
-            </div>
-          )}
-          {exito && (
-            <div className="alert-success-login visible animation-login" style={{ "--D": 1 }}>
-              <i className="bx bxs-check-circle"></i>
-              <span>{exito}</span>
-            </div>
-          )}
-
-          <Form onSubmit={handleSubmit} style={{ position: "relative", overflow: "hidden", minHeight: "320px" }}>
+          <Form
+            onSubmit={handleSubmit}
+          >
             <AnimatePresence custom={step}>
               {step === 1 && (
                 <motion.div
@@ -138,70 +143,84 @@ export default function Registro() {
                   exit="exit"
                   custom={step}
                 >
-                  <div className="input-box-login animation-login" style={{ "--D": 2 }}>
-                    <Form.Control
-                      type="text"
-                      value={usuario}
-                      onChange={(e) => setUsuario(e.target.value)}
-                      required
-                      placeholder=" "
-                    />
-                    <label>Usuario</label>
-                    <i className="bx bxs-user"></i>
-                  </div>
+                  <Row className="mb-3">
+                    <Col xs={12}>
+                      <div className="input-box-login animation-login">
+                        <Form.Control
+                          type="text"
+                          value={usuario}
+                          onChange={(e) => setUsuario(e.target.value)}
+                          required
+                          placeholder=" "
+                        />
+                        <label>Usuario</label>
+                        <i className="bx bxs-user"></i>
+                      </div>
+                    </Col>
+                  </Row>
 
-                  <div className="input-box-login animation-login" style={{ "--D": 3 }}>
-                    <Form.Control
-                      type="text"
-                      name="nombres"
-                      value={persona.nombres}
-                      onChange={handleChangePersona}
-                      required
-                      placeholder=" "
-                    />
-                    <label>Nombres</label>
-                    <i className="bx bxs-id-card"></i>
-                  </div>
+                  <Row className="mb-3">
+                    <Col md={6} className="mb-md-0">
+                      <div className="input-box-login animation-login">
+                        <Form.Control
+                          type="text"
+                          name="nombres"
+                          value={persona.nombres}
+                          onChange={handleChangePersona}
+                          required
+                          placeholder=" "
+                        />
+                        <label>Nombres</label>
+                        <i className="bx bxs-id-card"></i>
+                      </div>
+                    </Col>
+                    <Col md={6}>
+                      <div className="input-box-login animation-login">
+                        <Form.Control
+                          type="text"
+                          name="apellidos"
+                          value={persona.apellidos}
+                          onChange={handleChangePersona}
+                          required
+                          placeholder=" "
+                        />
+                        <label>Apellidos</label>
+                        <i className="bx bxs-user-detail"></i>
+                      </div>
+                    </Col>
+                  </Row>
 
-                  <div className="input-box-login animation-login" style={{ "--D": 4 }}>
-                    <Form.Control
-                      type="text"
-                      name="apellidos"
-                      value={persona.apellidos}
-                      onChange={handleChangePersona}
-                      required
-                      placeholder=" "
-                    />
-                    <label>Apellidos</label>
-                    <i className="bx bxs-user-detail"></i>
-                  </div>
+                  <Row className="mb-4">
+                    <Col md={6} className=" mb-md-0">
+                      <div className="input-box-login animation-login">
+                        <Form.Control
+                          type="email"
+                          name="correo"
+                          value={persona.correo}
+                          onChange={handleChangePersona}
+                          required
+                          placeholder=" "
+                        />
+                        <label>Correo Electrónico</label>
+                        <i className="bx bx-envelope"></i>
+                      </div>
+                    </Col>
+                    <Col md={6}>
+                      <div className="input-box-login animation-login" style={{ "--D": 6 }}>
+                        <Form.Control
+                          type="text"
+                          name="telefono"
+                          value={persona.telefono}
+                          onChange={handleChangePersona}
+                          placeholder=" "
+                        />
+                        <label>Teléfono (Opcional)</label>
+                        <i className="bx bx-phone"></i>
+                      </div>
+                    </Col>
+                  </Row>
 
-                  <div className="input-box-login animation-login" style={{ "--D": 5 }}>
-                    <Form.Control
-                      type="email"
-                      name="correo"
-                      value={persona.correo}
-                      onChange={handleChangePersona}
-                      required
-                      placeholder=" "
-                    />
-                    <label>Correo Electrónico</label>
-                    <i className="bx bx-envelope"></i>
-                  </div>
-
-                  <div className="input-box-login animation-login" style={{ "--D": 6 }}>
-                    <Form.Control
-                      type="text"
-                      name="telefono"
-                      value={persona.telefono}
-                      onChange={handleChangePersona}
-                      placeholder=" "
-                    />
-                    <label>Teléfono</label>
-                    <i className="bx bx-phone"></i>
-                  </div>
-
-                  <Button variant="primary" className="btn-login mt-3 w-100" onClick={handleNext}>
+                  <Button variant="primary" className="btn-login w-100" onClick={handleNext}>
                     Siguiente ➜
                   </Button>
                 </motion.div>
@@ -216,7 +235,7 @@ export default function Registro() {
                   exit="exit"
                   custom={step}
                 >
-                  <div className="input-box-login animation-login" style={{ "--D": 7 }}>
+                  <div className="input-box-login animation-login mb-4" style={{ "--D": 7 }}>
                     <Form.Control
                       type="password"
                       value={contrasena}
@@ -228,7 +247,7 @@ export default function Registro() {
                     <i className="bx bxs-lock-alt"></i>
                   </div>
 
-                  <div className="input-box-login animation-login" style={{ "--D": 8 }}>
+                  <div className="input-box-login animation-login mb-4" style={{ "--D": 8 }}>
                     <Form.Control
                       type="password"
                       value={confirmar}
