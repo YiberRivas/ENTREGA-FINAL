@@ -15,13 +15,13 @@ export default function TarjetaLavadora({ nombre, estado, descripcion, ubicacion
         <p className="washer-description">{descripcion}</p>
         <div className="washer-details">
           <div className="detail-item">
-            <i className="fas fa-map-marker-alt"></i> {ubicacion}
+            <i className="bi bi-geo-alt"></i> {ubicacion}
           </div>
           <div className="detail-item">
-            <i className="fas fa-weight"></i> Capacidad: {capacidad}
+            <i className="bi bi-box"></i> Capacidad: {capacidad}
           </div>
           <div className="detail-item price">
-            <i className="fas fa-dollar-sign"></i> {precio} / hora
+            <i className="bi bi-currency-dollar"></i> {precio} / hora
           </div>
         </div>
         <Button variant="primary" className="w-100" href="/login">

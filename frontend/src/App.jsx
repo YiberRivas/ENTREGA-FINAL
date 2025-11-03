@@ -9,10 +9,9 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Rutas públicas */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/registro" element={<Registro />} />
+        <Route path="/Login" element={<Login />} />
+        <Route path="/Registro" element={<Registro />} />
         <Route path="/" element={<Inicio />} /> {/* o tu home sin login */}
-
         {/* Rutas protegidas */}
         <Route
           path="/inicio"

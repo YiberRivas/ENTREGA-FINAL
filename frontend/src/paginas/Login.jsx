@@ -1,135 +1,136 @@
+// paginas/Login.jsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Form, Button, Spinner } from "react-bootstrap";
-import api from "../api/axiosConfig";
-import Swal from "sweetalert2";
-import "boxicons/css/boxicons.min.css";
+import { Container, Row, Col, Form, Alert } from "react-bootstrap";
+import { Link, useNavigate } from "react-router-dom";
 import "../assets/estilos/login.css";
+import Logo from "../assets/img/Logo-Serv.png";
 
 export default function Login() {
+  const [formData, setFormData] = useState({
+    usuario: "",
+    contraseña: ""
+  });
+  const [alert, setAlert] = useState({ show: false, message: "", type: "" });
   const navigate = useNavigate();
-  const [usuario, setUsuario] = useState("");
-  const [contrasena, setContrasena] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
-
-    if (!usuario || !contrasena) {
-      Swal.fire({
-        icon: "warning",
-        title: "Campos vacíos",
-        text: "Por favor completa ambos campos antes de continuar ⚠️",
-        confirmButtonColor: "#f39c12",
-      });
-      setLoading(false);
+    
+    // Validaciones básicas
+    if (!formData.usuario || !formData.contraseña) {
+      showAlert("Por favor completa todos los campos", "error");
       return;
     }
 
-    try {
-      // Petición al backend
-      const response = await api.post("/login", {
-        usuario: usuario,
-        contrasena: contrasena,
-      });
-
-      // Guardamos el token
-      const token = response.data.access_token;
-      localStorage.setItem("token", token);
-      localStorage.setItem("usuario", usuario);
-
-      // ✅ Alerta de éxito
-      Swal.fire({
-        icon: "success",
-        title: "¡Bienvenido!",
-        text: `Inicio de sesión exitoso. Hola, ${usuario} 👋`,
-        confirmButtonColor: "#28a745",
-        timer: 2000,
-        timerProgressBar: true,
-      }).then(() => {
-        navigate("/inicio");
-      });
-    } catch (err) {
-      console.error(err);
-      // ❌ Alerta de error
-      Swal.fire({
-        icon: "error",
-        title: "Error de autenticación",
-        text: "Usuario o contraseña incorrectos ❌",
-        confirmButtonColor: "#dc3545",
-      });
-    } finally {
-      setLoading(false);
+    if (formData.contraseña.length < 6) {
+      showAlert("La contraseña debe tener al menos 6 caracteres", "error");
+      return;
     }
+
+    // Simulación de login exitoso
+    showAlert("¡Inicio de sesión exitoso! Redirigiendo...", "success");
+    
+    // Guardar token simulado
+    localStorage.setItem("token", "token_simulado");
+    
+    // Redirigir después de 2 segundos
+    setTimeout(() => {
+      navigate("/");
+    }, 2000);
+  };
+
+  const showAlert = (message, type) => {
+    setAlert({ show: true, message, type });
+    setTimeout(() => {
+      setAlert({ show: false, message: "", type: "" });
+    }, 5000);
   };
 
   return (
     <div className="login-page">
-      {/* Botón volver */}
-      <div className="top-left-button" onClick={() => navigate("/")}>
-        <i className="bx bx-arrow-back"></i> Volver al inicio
-      </div>
-
-      <div className="floating-icons-login">
-        <div></div><div></div><div></div><div></div>
-      </div>
-
+      
       <div className="login-container">
-        <div className="curved-shape-login"></div>
-
-        <div className="form-box-login">
-          <h2 className="animation-login" style={{ "--D": 0 }}>Iniciar Sesión</h2>
-
-          <Form onSubmit={handleSubmit}>
-            <div className="input-box-login animation-login" style={{ "--D": 2 }}>
-              <Form.Control
-                type="text"
-                value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
-                required
-                placeholder=" "
-              />
-              <label>Usuario</label>
-              <i className="bx bxs-user"></i>
-            </div>
-
-            <div className="input-box-login animation-login" style={{ "--D": 3 }}>
-              <Form.Control
-                type="password"
-                value={contrasena}
-                onChange={(e) => setContrasena(e.target.value)}
-                required
-                placeholder=" "
-              />
-              <label>Contraseña</label>
-              <i className="bx bxs-lock-alt"></i>
-            </div>
-
-            <div className="input-box-login animation-login" style={{ "--D": 4 }}>
-              <Button type="submit" className="btn-login" disabled={loading}>
-                {loading ? <Spinner animation="border" size="sm" /> : <span>Ingresar</span>}
-              </Button>
-            </div>
-
-            <div className="regi-link-login animation-login" style={{ "--D": 5 }}>
-              <p>
-                ¿No tienes una cuenta? <br />
-                <span className="link-action-login" onClick={() => navigate("/registro")}>
-                  Regístrate
-                </span>
-              </p>
-            </div>
-          </Form>
+        {/* Fondos animados */}
+        <div className="login-background">
+          <div className="floating-shape shape-1"></div>
+          <div className="floating-shape shape-2"></div>
+          <div className="floating-shape shape-3"></div>
+          <div className="floating-shape shape-4"></div>
         </div>
 
-        <div className="info-content-login">
-          <h2 className="animation-login" style={{ "--D": 0 }}>¡Bienvenido de nuevo!</h2>
-          <p className="animation-login" style={{ "--D": 1 }}>
-            Accede a tu cuenta para gestionar tus lavadoras y servicios de alquiler fácilmente.
-          </p>
-        </div>
+        <Container>
+          <Row className="justify-content-center">
+            <Col md={6} lg={4}>
+              <div className="login-card p-4">
+                <div className="login-header">
+                  <div className="login-logo">
+                    <Link to="/">
+                      <img src={Logo} alt="Servilavadora" className="logo-imagenn" />
+                    </Link>
+                  </div>
+                  <h2>Iniciar Sesión</h2>
+                  <p className="text-muted">Accede a tu cuenta</p>
+                </div>
+
+                {alert.show && (
+                  <Alert 
+                    className={alert.type === "success" ? "alert-custom alert-success-custom" : "alert-custom alert-error-custom"}
+                  >
+                    {alert.message}
+                  </Alert>
+                )}
+
+                <Form onSubmit={handleSubmit}>
+                  <div className="form-group">
+                    <label className="form-label">Usuario o Email</label>
+                    <Form.Control
+                      type="text"
+                      name="usuario"
+                      value={formData.usuario}
+                      onChange={handleChange}
+                      placeholder="Ingresa tu usuario o email"
+                      className="form-control"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Contraseña</label>
+                    <Form.Control
+                      type="password"
+                      name="contraseña"
+                      value={formData.contraseña}
+                      onChange={handleChange}
+                      placeholder="Ingresa tu contraseña"
+                      className="form-control"
+                    />
+                  </div>
+
+                  <button type="submit" className="btn-login">
+                    Iniciar Sesión
+                  </button>
+                </Form>
+
+                <div className="login-footer">
+                  <p>
+                    ¿No tienes una cuenta?{" "}
+                    <Link to="/registro" className="login-link">
+                      Regístrate aquí
+                    </Link>
+                  </p>
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </Container>
       </div>
+
     </div>
   );
 }
