@@ -1,4 +1,6 @@
+// paginas/Registro.jsx
 import { useState } from "react";
+<<<<<<< HEAD
 import { Container, Row, Col, Form, Spinner, Button, ProgressBar } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,41 +24,42 @@ export default function Registro() {
     nombres: "",
     apellidos: "",
     correo: "",
+=======
+import { Container, Row, Col, Form, Alert } from "react-bootstrap";
+import { Link, useNavigate } from "react-router-dom";
+import "../assets/estilos/registro.css";
+import Logo from "../assets/img/Logo-Serv.png";
+
+export default function Registro() {
+  const [formData, setFormData] = useState({
+    nombre: "",
+    apellido: "",
+    email: "",
+>>>>>>> 99875aa0c7e4d1ba439d7cb0423cfe923082821c
     telefono: "",
+    contraseña: "",
+    confirmarContraseña: ""
   });
+  const [alert, setAlert] = useState({ show: false, message: "", type: "" });
+  const navigate = useNavigate();
 
-  const handleChangePersona = (e) => {
-    setPersona({ ...persona, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
-  const handleNext = () => {
-    if (!usuario || !persona.nombres || !persona.apellidos || !persona.correo) {
-      Swal.fire({
-        icon: "warning",
-        title: "Campos incompletos",
-        text: "Completa todos los campos antes de continuar ⚠️",
-        confirmButtonColor: "#f39c12",
-      });
-      return;
-    }
-    setStep(2);
-  };
-
-  const handleBack = () => setStep(1);
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-
-    if (contrasena !== confirmar) {
-      Swal.fire({
-        icon: "error",
-        title: "Contraseñas no coinciden",
-        text: "Verifica que ambas contraseñas sean iguales ❌",
-        confirmButtonColor: "#dc3545",
-      });
+    
+    // Validaciones
+    if (!formData.nombre || !formData.apellido || !formData.email || !formData.contraseña) {
+      showAlert("Por favor completa todos los campos obligatorios", "error");
       return;
     }
 
+<<<<<<< HEAD
     setLoading(true);
     try {
       const response = await api.post("/usuarios/registro", {
@@ -109,29 +112,32 @@ export default function Registro() {
 
     } finally {
       setLoading(false);
+=======
+    if (formData.contraseña !== formData.confirmarContraseña) {
+      showAlert("Las contraseñas no coinciden", "error");
+      return;
+>>>>>>> 99875aa0c7e4d1ba439d7cb0423cfe923082821c
     }
+
+    if (formData.contraseña.length < 6) {
+      showAlert("La contraseña debe tener al menos 6 caracteres", "error");
+      return;
+    }
+    
+    // Redirigir después de 2 segundos
+    setTimeout(() => {
+      navigate("/login");
+    }, 2000);
   };
 
-  const slideVariants = {
-    initial: (direction) => ({
-      x: direction > 0 ? 300 : -300,
-      opacity: 0,
-      position: "absolute",
-    }),
-    animate: {
-      x: 0,
-      opacity: 1,
-      position: "relative",
-      transition: { duration: 0.5, ease: "easeOut" },
-    },
-    exit: (direction) => ({
-      x: direction > 0 ? -300 : 300,
-      opacity: 0,
-      position: "absolute",
-      transition: { duration: 0.5, ease: "easeIn" },
-    }),
+  const showAlert = (message, type) => {
+    setAlert({ show: true, message, type });
+    setTimeout(() => {
+      setAlert({ show: false, message: "", type: "" });
+    }, 5000);
   };
 
+<<<<<<< HEAD
   // 🎉 Pantalla de éxito (aparece después de registrarse)
   if (registroExitoso) {
     return (
@@ -168,6 +174,11 @@ export default function Registro() {
   // 🧩 Formulario de registro (2 pasos)
   return (
     <div className="registro-page">
+=======
+  return (
+    <div className="registro-page">
+      
+>>>>>>> 99875aa0c7e4d1ba439d7cb0423cfe923082821c
       <div className="registro-container">
         {/* Fondos animados */}
         <div className="registro-background">
@@ -183,6 +194,7 @@ export default function Registro() {
               <div className="registro-card p-4">
                 <div className="registro-header">
                   <div className="registro-logo">
+<<<<<<< HEAD
                     <Link to="/">
                       <img src={Logo} alt="Servilavadora" className="logo-imgen" />
                     </Link>
@@ -344,6 +356,110 @@ export default function Registro() {
                 </Form>
 
                 <div className="registro-footer text-center mt-4">
+=======
+                    <div className="registro-logo-image">
+                      <Link to="/">
+                        <img src={Logo} alt="Servilavadora" className="logo-imgen" />
+                      </Link>
+                    </div>
+                  </div>
+                  <h2>Crear Cuenta</h2>
+                  <p className="text-muted">Únete a nuestra comunidad</p>
+                </div>
+
+                {alert.show && (
+                  <Alert 
+                    className={alert.type === "success" ? "alert-custom alert-success-custom" : "alert-custom alert-error-custom"}
+                  >
+                    {alert.message}
+                  </Alert>
+                )}
+
+
+                <Form onSubmit={handleSubmit}>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">Nombre</label>
+                      <Form.Control
+                        type="text"
+                        name="nombre"
+                        value={formData.nombre}
+                        onChange={handleChange}
+                        placeholder="Tu nombre"
+                        className="form-control"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Apellido</label>
+                      <Form.Control
+                        type="text"
+                        name="apellido"
+                        value={formData.apellido}
+                        onChange={handleChange}
+                        placeholder="Tu apellido"
+                        className="form-control"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Email</label>
+                    <Form.Control
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="tu@email.com"
+                      className="form-control"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Teléfono (Opcional)</label>
+                    <Form.Control
+                      type="tel"
+                      name="telefono"
+                      value={formData.telefono}
+                      onChange={handleChange}
+                      placeholder="+57 300 000 0000"
+                      className="form-control"
+                    />
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">Contraseña</label>
+                      <Form.Control
+                        type="password"
+                        name="contraseña"
+                        value={formData.contraseña}
+                        onChange={handleChange}
+                        placeholder="Mínimo 6 caracteres"
+                        className="form-control"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Confirmar Contraseña</label>
+                      <Form.Control
+                        type="password"
+                        name="confirmarContraseña"
+                        value={formData.confirmarContraseña}
+                        onChange={handleChange}
+                        placeholder="Repite tu contraseña"
+                        className="form-control"
+                      />
+                    </div>
+                  </div>
+
+                  <button type="submit" className="btn-registro">
+                    Crear Cuenta
+                  </button>
+                </Form>
+
+                <div className="registro-footer">
+>>>>>>> 99875aa0c7e4d1ba439d7cb0423cfe923082821c
                   <p>
                     ¿Ya tienes una cuenta?{" "}
                     <Link to="/login" className="registro-link">

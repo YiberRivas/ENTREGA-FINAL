@@ -2,7 +2,11 @@ import { Navbar, Nav, Container, Button } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import "../assets/estilos/inicio.css";
+<<<<<<< HEAD
 import Logo from "../assets/Logo-Serv.png";
+=======
+import Logo from "../assets/img/Logo-Serv.png";
+>>>>>>> 99875aa0c7e4d1ba439d7cb0423cfe923082821c
 
 export default function Encabezado() {
   const [expanded, setExpanded] = useState(false);
