@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.1.0",
     "axios": "^1.13.1",
     "bootstrap": "^5.3.8",
     "boxicons": "^2.1.4",
@@ -18,6 +19,7 @@
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.5",
+    "recharts": "^3.3.0",
     "sweetalert2": "^11.26.3"
   },
   "devDependencies": {

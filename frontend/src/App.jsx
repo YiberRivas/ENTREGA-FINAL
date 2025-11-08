@@ -1,27 +1,47 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./paginas/Login";
 import Registro from "./paginas/Registro";
-import Inicio from "./paginas/Inicio"; // tu página principal
-import RutaPrivada from "./componentes/RutaPrivada"; // importa la nueva ruta privada
+import Inicio from "./paginas/Inicio";
+import RutaPrivada from "./componentes/RutaPrivada";
+
+// Layout y páginas del panel administrativo
+import AdminLayout from "./componentes/admin/AdminLayout";
+import AdminInicio from "./componentes/admin/AdminDashboard";
+import Usuarios from "./componentes/admin/Usuarios";
+import Servicios from "./componentes/admin/Servicios";
+import Agendamientos from "./componentes/admin/AgendamientosTable";
+import Pagos from "./componentes/admin/Pagos";
+import Agendar from "./componentes/admin/Agendar";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Rutas públicas */}
+        {/* 🌐 RUTAS PÚBLICAS */}
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
-        <Route path="/" element={<Inicio />} /> {/* o tu home sin login */}
+        <Route path="/" element={<Inicio />} />
 
-        {/* Rutas protegidas */}
+        {/* 🔐 RUTAS PRIVADAS DEL ADMIN */}
         <Route
-          path="/inicio"
+          path="/admin"
           element={
             <RutaPrivada>
-              <Inicio />
+              <AdminLayout />
             </RutaPrivada>
           }
-        />
+        >
+          {/* Página principal del dashboard */}
+          <Route index element={<Navigate to="inicio" replace />} />
+          <Route path="inicio" element={<AdminInicio />} />
+          <Route path="usuarios" element={<Usuarios />} />
+          <Route path="servicios" element={<Servicios />} />
+          <Route path="agendar" element={<Agendar />} />
+          <Route path="pagos" element={<Pagos />} />
+        </Route>
+
+        {/* ❌ Cualquier otra ruta redirige al inicio */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,0 +1,73 @@
+:root{
+  --primary: #00C6B3;
+  --primary-dark: #00A895;
+  --light: #f8f9fa;
+  --dark: #1a1a2e;
+  --radius: 12px;
+  --shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.admin-root, .admin-main {
+  min-height: 100vh;
+  background: var(--light);
+}
+
+/* Sidebar */
+.admin-sidebar {
+  width: 250px;
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+.admin-sidebar .sidebar-brand i {
+  background: rgba(255,255,255,0.12);
+  padding: 8px;
+  border-radius: 8px;
+  margin-right: 8px;
+}
+.admin-sidebar a {
+  color: #fff;
+  padding: 10px 8px;
+  border-radius: 8px;
+}
+.admin-sidebar a:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+/* Main content (to the right of sidebar) */
+.admin-main {
+  margin-left: 250px;
+}
+
+/* Header */
+.admin-header {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* Cards */
+.card-stat { transition: transform .25s ease, box-shadow .25s ease; }
+.card-stat:hover { transform: translateY(-6px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+
+/* Chart bars (if añades) */
+.chart-bars { height: 200px; display: flex; gap: 12px; align-items: flex-end; }
+.chart-bars .bar { width: 40px; border-radius: 8px 8px 0 0; background: var(--primary); transition: .3s; }
+.chart-bars .bar:hover { background: var(--primary-dark); opacity: .95; }
+
+/* Table styles */
+.table-container .btn-view { background: var(--primary); color: #fff; }
+.table-container .btn-delete { background: #ff7b7b; color: #fff; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .admin-sidebar { width: 70px; }
+  .admin-main { margin-left: 70px; }
+  .admin-sidebar .sidebar-brand span { display: none; }
+}

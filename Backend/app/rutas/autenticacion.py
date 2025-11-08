@@ -1,35 +1,43 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-import jwt  # Import directo
 from app.config.database import get_db
-from app.modelos.usuario import Usuario
-from app.seguridad.hash import verificar_hash
+from app.esquemas.esquemas import LoginRequest, Token
+from app.modelos.modelos import Usuario
+from app.seguridad import verify_password, create_access_token
 
-router = APIRouter(
-    prefix="/login",
-    tags=["Autenticación"]
-)
+router = APIRouter(prefix="/login", tags=["Autenticación"])
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-SECRET_KEY = "clave_secreta_super_segura"
-ALGORITHM = "HS256"
-
-@router.post("/")
-def login_usuario(datos: dict, db: Session = Depends(get_db)):
-    usuario = datos.get("usuario")
-    contrasena = datos.get("contrasena")
-
-    db_usuario = db.query(Usuario).filter(Usuario.usuario == usuario).first()
-    if not db_usuario:
-        raise HTTPException(status_code=400, detail="Usuario no encontrado")
-
-    if not verificar_hash(contrasena, db_usuario.contrasena_hash):
-        raise HTTPException(status_code=400, detail="Contraseña incorrecta")
-
-    token = jwt.encode({"sub": usuario}, SECRET_KEY, algorithm=ALGORITHM)
-
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "usuario": db_usuario.usuario,
-        "id_usuario": db_usuario.id_usuario
-    }
+@router.post("", response_model=Token)
+def login(request: LoginRequest, db: Session = Depends(get_db)):
+    """Login de usuario"""
+    # Buscar usuario en la BD
+    usuario = db.query(Usuario).filter(Usuario.usuario == request.usuario).first()
+    
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario o contraseña incorrectos"
+        )
+    
+    # Verificar contraseña
+    if not verify_password(request.contrasena, usuario.contrasena_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario o contraseña incorrectos"
+        )
+    
+    # Verificar si está activo
+    if not usuario.activo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Usuario inactivo"
+        )
+    
+    # Crear token
+    access_token = create_access_token(
+        data={"sub": usuario.usuario, "user_id": usuario.id_usuario}
+    )
+    
+    return {"access_token": access_token, "token_type": "bearer"}
