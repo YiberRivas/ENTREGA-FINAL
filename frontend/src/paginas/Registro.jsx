@@ -1,6 +1,4 @@
-// paginas/Registro.jsx
 import { useState } from "react";
-<<<<<<< HEAD
 import { Container, Row, Col, Form, Spinner, Button, ProgressBar } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,7 +6,7 @@ import Swal from "sweetalert2";
 import api from "../api/axiosConfig";
 import "boxicons/css/boxicons.min.css";
 import "../assets/estilos/registro.css";
-import Logo from "../assets/Logo-Serv.png";
+import Logo from "../assets/img/Logo-Serv.png";
 
 export default function Registro() {
   const navigate = useNavigate();
@@ -24,42 +22,41 @@ export default function Registro() {
     nombres: "",
     apellidos: "",
     correo: "",
-=======
-import { Container, Row, Col, Form, Alert } from "react-bootstrap";
-import { Link, useNavigate } from "react-router-dom";
-import "../assets/estilos/registro.css";
-import Logo from "../assets/img/Logo-Serv.png";
-
-export default function Registro() {
-  const [formData, setFormData] = useState({
-    nombre: "",
-    apellido: "",
-    email: "",
->>>>>>> 99875aa0c7e4d1ba439d7cb0423cfe923082821c
     telefono: "",
-    contraseña: "",
-    confirmarContraseña: ""
   });
-  const [alert, setAlert] = useState({ show: false, message: "", type: "" });
-  const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const handleChangePersona = (e) => {
+    setPersona({ ...persona, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleNext = () => {
+    if (!usuario || !persona.nombres || !persona.apellidos || !persona.correo) {
+      Swal.fire({
+        icon: "warning",
+        title: "Campos incompletos",
+        text: "Completa todos los campos antes de continuar ⚠️",
+        confirmButtonColor: "#f39c12",
+      });
+      return;
+    }
+    setStep(2);
+  };
+
+  const handleBack = () => setStep(1);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validaciones
-    if (!formData.nombre || !formData.apellido || !formData.email || !formData.contraseña) {
-      showAlert("Por favor completa todos los campos obligatorios", "error");
+
+    if (contrasena !== confirmar) {
+      Swal.fire({
+        icon: "error",
+        title: "Contraseñas no coinciden",
+        text: "Verifica que ambas contraseñas sean iguales ❌",
+        confirmButtonColor: "#dc3545",
+      });
       return;
     }
 
-<<<<<<< HEAD
     setLoading(true);
     try {
       const response = await api.post("/usuarios/registro", {
@@ -84,60 +81,39 @@ export default function Registro() {
         }, 3000);
       }
     } catch (err) {
-  console.error("Error en registro:", err);
-
-  // Capturar el mensaje de error correctamente
-  let mensajeError = "Verifica los datos o si el usuario ya existe";
-
-  if (err.response) {
-    if (typeof err.response.data === "string") {
-      mensajeError = err.response.data;
-    } else if (err.response.data?.detail) {
-      if (typeof err.response.data.detail === "string") {
-        mensajeError = err.response.data.detail;
-      } else if (Array.isArray(err.response.data.detail)) {
-        mensajeError = err.response.data.detail.map(d => d.msg || JSON.stringify(d)).join(", ");
-      } else if (typeof err.response.data.detail === "object") {
-        mensajeError = JSON.stringify(err.response.data.detail);
-      }
-    }
-  }
-
-  Swal.fire({
-    icon: "error",
-    title: "Error en el registro",
-    html: `<strong>${mensajeError}</strong> ❌`,
-    confirmButtonColor: "#dc3545",
-  });
-
+      console.error("Error en registro:", err);
+      const mensajeError = err.response?.data?.detail || "Verifica los datos o si el usuario ya existe";
+      Swal.fire({
+        icon: "error",
+        title: "Error en el registro",
+        text: `${mensajeError} ❌`,
+        confirmButtonColor: "#dc3545",
+      });
     } finally {
       setLoading(false);
-=======
-    if (formData.contraseña !== formData.confirmarContraseña) {
-      showAlert("Las contraseñas no coinciden", "error");
-      return;
->>>>>>> 99875aa0c7e4d1ba439d7cb0423cfe923082821c
     }
-
-    if (formData.contraseña.length < 6) {
-      showAlert("La contraseña debe tener al menos 6 caracteres", "error");
-      return;
-    }
-    
-    // Redirigir después de 2 segundos
-    setTimeout(() => {
-      navigate("/login");
-    }, 2000);
   };
 
-  const showAlert = (message, type) => {
-    setAlert({ show: true, message, type });
-    setTimeout(() => {
-      setAlert({ show: false, message: "", type: "" });
-    }, 5000);
+  const slideVariants = {
+    initial: (direction) => ({
+      x: direction > 0 ? 300 : -300,
+      opacity: 0,
+      position: "absolute",
+    }),
+    animate: {
+      x: 0,
+      opacity: 1,
+      position: "relative",
+      transition: { duration: 0.5, ease: "easeOut" },
+    },
+    exit: (direction) => ({
+      x: direction > 0 ? -300 : 300,
+      opacity: 0,
+      position: "absolute",
+      transition: { duration: 0.5, ease: "easeIn" },
+    }),
   };
 
-<<<<<<< HEAD
   // 🎉 Pantalla de éxito (aparece después de registrarse)
   if (registroExitoso) {
     return (
@@ -174,11 +150,6 @@ export default function Registro() {
   // 🧩 Formulario de registro (2 pasos)
   return (
     <div className="registro-page">
-=======
-  return (
-    <div className="registro-page">
-      
->>>>>>> 99875aa0c7e4d1ba439d7cb0423cfe923082821c
       <div className="registro-container">
         {/* Fondos animados */}
         <div className="registro-background">
@@ -194,7 +165,6 @@ export default function Registro() {
               <div className="registro-card p-4">
                 <div className="registro-header">
                   <div className="registro-logo">
-<<<<<<< HEAD
                     <Link to="/">
                       <img src={Logo} alt="Servilavadora" className="logo-imgen" />
                     </Link>
@@ -220,7 +190,7 @@ export default function Registro() {
                           <Col xs={12}>
                             <div className="input-box-login animation-login">
 
-                                <label>Usuario</label>
+                              <label>Usuario</label>
                               <i className="bx bxs-user"></i>
                               <Form.Control
                                 type="text"
@@ -229,7 +199,7 @@ export default function Registro() {
                                 required
                                 placeholder=" "
                               />
-                            
+                              
                             </div>
                           </Col>
                         </Row>
@@ -237,7 +207,7 @@ export default function Registro() {
                         <Row className="mb-3">
                           <Col md={6} className="mb-3 mb-md-0">
                             <div className="input-box-login animation-login">
-                               <label>Nombres</label>
+                              <label>Nombres</label>
                               <i className="bx bxs-id-card"></i>
                               <Form.Control
                                 type="text"
@@ -247,12 +217,11 @@ export default function Registro() {
                                 required
                                 placeholder=" "
                               />
-                             
+                              
                             </div>
                           </Col>
                           <Col md={6}>
                             <div className="input-box-login animation-login">
-
                               <label>Apellidos</label>
                               <i className="bx bxs-user-detail"></i>
                               <Form.Control
@@ -271,8 +240,7 @@ export default function Registro() {
                         <Row className="mb-4">
                           <Col md={6} className="mb-3 mb-md-0">
                             <div className="input-box-login animation-login">
-
-                              <label>Correo Electrónico</label>
+                               <label>Correo Electrónico</label>
                               <i className="bx bx-envelope"></i>
                               <Form.Control
                                 type="email"
@@ -282,7 +250,7 @@ export default function Registro() {
                                 required
                                 placeholder=" "
                               />
-                            
+                             
                             </div>
                           </Col>
                           <Col md={6}>
@@ -356,110 +324,6 @@ export default function Registro() {
                 </Form>
 
                 <div className="registro-footer text-center mt-4">
-=======
-                    <div className="registro-logo-image">
-                      <Link to="/">
-                        <img src={Logo} alt="Servilavadora" className="logo-imgen" />
-                      </Link>
-                    </div>
-                  </div>
-                  <h2>Crear Cuenta</h2>
-                  <p className="text-muted">Únete a nuestra comunidad</p>
-                </div>
-
-                {alert.show && (
-                  <Alert 
-                    className={alert.type === "success" ? "alert-custom alert-success-custom" : "alert-custom alert-error-custom"}
-                  >
-                    {alert.message}
-                  </Alert>
-                )}
-
-
-                <Form onSubmit={handleSubmit}>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">Nombre</label>
-                      <Form.Control
-                        type="text"
-                        name="nombre"
-                        value={formData.nombre}
-                        onChange={handleChange}
-                        placeholder="Tu nombre"
-                        className="form-control"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Apellido</label>
-                      <Form.Control
-                        type="text"
-                        name="apellido"
-                        value={formData.apellido}
-                        onChange={handleChange}
-                        placeholder="Tu apellido"
-                        className="form-control"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Email</label>
-                    <Form.Control
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="tu@email.com"
-                      className="form-control"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Teléfono (Opcional)</label>
-                    <Form.Control
-                      type="tel"
-                      name="telefono"
-                      value={formData.telefono}
-                      onChange={handleChange}
-                      placeholder="+57 300 000 0000"
-                      className="form-control"
-                    />
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">Contraseña</label>
-                      <Form.Control
-                        type="password"
-                        name="contraseña"
-                        value={formData.contraseña}
-                        onChange={handleChange}
-                        placeholder="Mínimo 6 caracteres"
-                        className="form-control"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Confirmar Contraseña</label>
-                      <Form.Control
-                        type="password"
-                        name="confirmarContraseña"
-                        value={formData.confirmarContraseña}
-                        onChange={handleChange}
-                        placeholder="Repite tu contraseña"
-                        className="form-control"
-                      />
-                    </div>
-                  </div>
-
-                  <button type="submit" className="btn-registro">
-                    Crear Cuenta
-                  </button>
-                </Form>
-
-                <div className="registro-footer">
->>>>>>> 99875aa0c7e4d1ba439d7cb0423cfe923082821c
                   <p>
                     ¿Ya tienes una cuenta?{" "}
                     <Link to="/login" className="registro-link">

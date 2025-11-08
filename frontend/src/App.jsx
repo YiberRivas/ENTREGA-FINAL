@@ -17,20 +17,20 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-<<<<<<< HEAD
+
         {/* 🌐 RUTAS PÚBLICAS */}
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
         <Route path="/" element={<Inicio />} />
 
         {/* 🔐 RUTAS PRIVADAS DEL ADMIN */}
-=======
+
         {/* Rutas públicas */}
         <Route path="/Login" element={<Login />} />
         <Route path="/Registro" element={<Registro />} />
         <Route path="/" element={<Inicio />} /> {/* o tu home sin login */}
         {/* Rutas protegidas */}
->>>>>>> 99875aa0c7e4d1ba439d7cb0423cfe923082821c
+
         <Route
           path="/admin"
           element={
