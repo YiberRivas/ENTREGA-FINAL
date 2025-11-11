@@ -124,11 +124,17 @@ class Agendamiento(Base):
     fecha = Column(Date, nullable=False)
     hora = Column(Time, nullable=False)
     estado = Column(Enum(EstadoAgendamiento), default=EstadoAgendamiento.pendiente)
-    creado_en = Column(TIMESTAMP)
+    creado_en = Column(TIMESTAMP, default=datetime.now)
     observaciones = Column(Text)
 
     persona = relationship("Persona", back_populates="agendamientos")
     servicio = relationship("Servicio", back_populates="agendamientos")
+    
+    # ✅ Relación nueva para conectar factura con agendamiento
+    factura = relationship("Factura", back_populates="agendamiento", uselist=False)
+
+ 
+
 
 
 # Agrega esta clase al final del archivo modelos.py
@@ -160,6 +166,7 @@ class Factura(Base):
 
     id_factura = Column(Integer, primary_key=True, autoincrement=True)
     persona_id = Column(Integer, ForeignKey("persona.id_persona"))
+    agendamiento_id = Column(Integer, ForeignKey("agendamiento.id_agendamiento"))  # ← AGREGAR
     fecha = Column(TIMESTAMP)
     total = Column(DECIMAL(12, 2), default=0.00)
     forma_pago_id = Column(Integer, ForeignKey("forma_pago.id_forma_pago"))
@@ -168,6 +175,11 @@ class Factura(Base):
     persona = relationship("Persona", back_populates="facturas")
     forma_pago = relationship("FormaPago", back_populates="facturas")
     pagos = relationship("Pago", back_populates="factura")
+    agendamiento = relationship("Agendamiento")
+
+
+
+
 
 
 class Pago(Base):

@@ -12,17 +12,21 @@ export default function Registro() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [registroExitoso, setRegistroExitoso] = useState(false); // 👈 nuevo estado para mostrar pantalla de éxito
+  const [registroExitoso, setRegistroExitoso] = useState(false);
 
-  // Datos del formulario
   const [usuario, setUsuario] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [confirmar, setConfirmar] = useState("");
+
   const [persona, setPersona] = useState({
     nombres: "",
     apellidos: "",
-    correo: "",
+    fecha_nacimiento: "",
+    tipo_identificacion_id: "",
+    identificacion: "",
+    direccion_id: null,
     telefono: "",
+    correo: "",
   });
 
   const handleChangePersona = (e) => {
@@ -30,7 +34,15 @@ export default function Registro() {
   };
 
   const handleNext = () => {
-    if (!usuario || !persona.nombres || !persona.apellidos || !persona.correo) {
+    if (
+      
+      !persona.nombres ||
+      !persona.apellidos ||
+      !persona.correo ||
+      !persona.identificacion ||
+      !persona.tipo_identificacion_id ||
+      !persona.fecha_nacimiento
+    ) {
       Swal.fire({
         icon: "warning",
         title: "Campos incompletos",
@@ -44,55 +56,67 @@ export default function Registro() {
 
   const handleBack = () => setStep(1);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  
 
-    if (contrasena !== confirmar) {
+const handleSubmit = async (e) => {
+  e.preventDefault();
+!usuario || !contrasena || !confirmar
+  if (contrasena !== confirmar) {
+    Swal.fire({
+      icon: "error",
+      title: "Contraseñas no coinciden",
+      text: "Verifica que ambas contraseñas sean iguales ❌",
+      confirmButtonColor: "#dc3545",
+    });
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const payload = {
+  usuario: usuario,
+  contrasena: contrasena,
+  persona: {
+    nombres: persona.nombres,
+    apellidos: persona.apellidos,
+    fecha_nacimiento: persona.fecha_nacimiento, 
+    tipo_identificacion_id: parseInt(persona.tipo_identificacion_id) || 1,
+    identificacion: persona.identificacion, 
+    direccion_id: null,
+    telefono: persona.telefono || "",
+    correo: persona.correo,
+    rol_id: 1,
+    fecha_registro: new Date().toISOString().split("T")[0],
+  },
+};
+
+    console.log("📤 Enviando datos al backend:", payload);
+
+    const response = await api.post("/usuarios/registro", payload);
+
+    if (response.status === 201 || response.status === 200) {
       Swal.fire({
-        icon: "error",
-        title: "Contraseñas no coinciden",
-        text: "Verifica que ambas contraseñas sean iguales ❌",
-        confirmButtonColor: "#dc3545",
-      });
-      return;
+        icon: "success",
+        title: "¡Registro exitoso!",
+        text: `Usuario "${usuario}" registrado correctamente ✅`,
+        confirmButtonColor: "#28a745",
+        timer: 2000,
+        timerProgressBar: true,
+      }).then(() => navigate("/login"));
     }
+  } catch (err) {
+    console.error("Error en registro:", err.response?.data || err);
+    Swal.fire({
+      icon: "error",
+      title: "Error en el registro",
+      text: err.response?.data?.detail || "Verifica los datos o si el usuario ya existe ❌",
+      confirmButtonColor: "#dc3545",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
-    setLoading(true);
-    try {
-      const response = await api.post("/usuarios/registro", {
-        usuario,
-        contrasena,
-        persona: {
-          ...persona,
-          tipo_identificacion_id: 1,
-          direccion_id: null,
-          rol_id: 1,
-          fecha_registro: new Date().toISOString().split("T")[0],
-        },
-      });
-
-      if (response.status === 201 || response.status === 200) {
-        // Mostrar pantalla de éxito
-        setRegistroExitoso(true);
-
-        // Redirigir automáticamente en 3 segundos
-        setTimeout(() => {
-          navigate("/login");
-        }, 3000);
-      }
-    } catch (err) {
-      console.error("Error en registro:", err);
-      const mensajeError = err.response?.data?.detail || "Verifica los datos o si el usuario ya existe";
-      Swal.fire({
-        icon: "error",
-        title: "Error en el registro",
-        text: `${mensajeError} ❌`,
-        confirmButtonColor: "#dc3545",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const slideVariants = {
     initial: (direction) => ({
@@ -114,44 +138,32 @@ export default function Registro() {
     }),
   };
 
-  // 🎉 Pantalla de éxito (aparece después de registrarse)
   if (registroExitoso) {
     return (
       <div className="registro-page">
-        <div className="registro-container">
-          <div className="registro-background">
-            <div className="registro-shape registro-shape-1"></div>
-            <div className="registro-shape registro-shape-2"></div>
-            <div className="registro-shape registro-shape-3"></div>
-            <div className="registro-shape registro-shape-4"></div>
-          </div>
-
-          <Container className="text-center">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6 }}
-              className="p-5 mt-5 bg-white rounded-4 shadow-lg"
-            >
-              <i className="bx bx-check-circle text-success" style={{ fontSize: "5rem" }}></i>
-              <h2 className="mt-3 text-success">¡Registro completado con éxito!</h2>
-              <p className="text-muted">
-                Bienvenido <strong>{usuario}</strong> 🎉 <br />
-                Serás redirigido al inicio de sesión en unos segundos...
-              </p>
-              <Spinner animation="border" variant="success" className="mt-3" />
-            </motion.div>
-          </Container>
-        </div>
+        <Container className="text-center mt-5">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            className="p-5 bg-white rounded-4 shadow-lg"
+          >
+            <i className="bx bx-check-circle text-success" style={{ fontSize: "5rem" }}></i>
+            <h2 className="mt-3 text-success">¡Registro completado con éxito!</h2>
+            <p className="text-muted">
+              Bienvenido <strong>{usuario}</strong> 🎉 <br />
+              Serás redirigido al inicio de sesión en unos segundos...
+            </p>
+            <Spinner animation="border" variant="success" className="mt-3" />
+          </motion.div>
+        </Container>
       </div>
     );
   }
 
-  // 🧩 Formulario de registro (2 pasos)
   return (
     <div className="registro-page">
       <div className="registro-container">
-        {/* Fondos animados */}
         <div className="registro-background">
           <div className="registro-shape registro-shape-1"></div>
           <div className="registro-shape registro-shape-2"></div>
@@ -169,11 +181,9 @@ export default function Registro() {
                       <img src={Logo} alt="Servilavadora" className="logo-imgen" />
                     </Link>
                   </div>
-                  <h2>Crear Cuenta </h2>
+                  <h2>Crear Cuenta</h2>
                   <p className="text-muted">Únete a nuestra comunidad</p>
                 </div>
-
-               
 
                 <Form onSubmit={handleSubmit}>
                   <AnimatePresence custom={step}>
@@ -186,88 +196,111 @@ export default function Registro() {
                         exit="exit"
                         custom={step}
                       >
-                        <Row className="mb-3">
-                          <Col xs={12}>
-                            <div className="input-box-login animation-login">
+                      
 
-                              <label>Usuario</label>
-                              <i className="bx bxs-user"></i>
-                              <Form.Control
-                                type="text"
-                                value={usuario}
-                                onChange={(e) => setUsuario(e.target.value)}
-                                required
-                                placeholder=" "
-                              />
-                              
-                            </div>
-                          </Col>
-                        </Row>
-
+                        {/* Nombres y Apellidos */}
                         <Row className="mb-3">
-                          <Col md={6} className="mb-3 mb-md-0">
-                            <div className="input-box-login animation-login">
+                          <Col md={6}>
+                            <div className="input-box-login">
                               <label>Nombres</label>
-                              <i className="bx bxs-id-card"></i>
                               <Form.Control
                                 type="text"
                                 name="nombres"
                                 value={persona.nombres}
                                 onChange={handleChangePersona}
                                 required
-                                placeholder=" "
                               />
-                              
                             </div>
                           </Col>
                           <Col md={6}>
-                            <div className="input-box-login animation-login">
+                            <div className="input-box-login">
                               <label>Apellidos</label>
-                              <i className="bx bxs-user-detail"></i>
                               <Form.Control
                                 type="text"
                                 name="apellidos"
                                 value={persona.apellidos}
                                 onChange={handleChangePersona}
                                 required
-                                placeholder=" "
                               />
-                              
                             </div>
                           </Col>
                         </Row>
 
-                        <Row className="mb-4">
-                          <Col md={6} className="mb-3 mb-md-0">
-                            <div className="input-box-login animation-login">
-                               <label>Correo Electrónico</label>
-                              <i className="bx bx-envelope"></i>
+                        {/* Fecha de nacimiento e identificación */}
+                        <Row className="mb-3">
+                          <Col md={6}>
+                            <div className="input-box-login">
+                              <label>Fecha de nacimiento</label>
                               <Form.Control
-                                type="email"
-                                name="correo"
-                                value={persona.correo}
+                                type="date"
+                                name="fecha_nacimiento"
+                                value={persona.fecha_nacimiento}
                                 onChange={handleChangePersona}
                                 required
-                                placeholder=" "
                               />
-                             
                             </div>
                           </Col>
+
                           <Col md={6}>
-                            <div className="input-box-login animation-login">
-                              <label>Teléfono (Opcional)</label>
-                              <i className="bx bx-phone"></i>
+                            <div className="input-box-login">
+                              <label>Tipo de identificación</label>
+                              <Form.Select
+                                name="tipo_identificacion_id"
+                                value={persona.tipo_identificacion_id}
+                                onChange={handleChangePersona}
+                                required
+                              >
+                                <option value="">Seleccione...</option>
+                                <option value="1">Cédula de Ciudadanía</option>
+                                <option value="2">Tarjeta de Identidad</option>
+                                <option value="3">Cédula Extranjera</option>
+                                <option value="4">Pasaporte</option>
+                              </Form.Select>
+                            </div>
+                          </Col>
+
+                          
+                        </Row>
+
+                        {/* identificación y teléfono */}
+                        <Row className="mb-3">
+                          <Col md={6}>
+                            <div className="input-box-login">
+                              <label>Identificación</label>
+                              <Form.Control
+                                type="text"
+                                name="identificacion"
+                                value={persona.identificacion}
+                                onChange={handleChangePersona}
+                                required
+                              />
+                            </div>
+                          </Col>
+                          
+                          <Col md={6}>
+                            <div className="input-box-login">
+                              <label>Teléfono</label>
                               <Form.Control
                                 type="text"
                                 name="telefono"
                                 value={persona.telefono}
                                 onChange={handleChangePersona}
-                                placeholder=" "
                               />
-                              
                             </div>
                           </Col>
                         </Row>
+
+                        {/* Correo */}
+                        <div className="input-box-login mb-4">
+                          <label>Correo electrónico</label>
+                          <Form.Control
+                            type="email"
+                            name="correo"
+                            value={persona.correo}
+                            onChange={handleChangePersona}
+                            required
+                          />
+                        </div>
 
                         <Button variant="primary" className="btn-login w-100" onClick={handleNext}>
                           Siguiente ➜
@@ -284,30 +317,39 @@ export default function Registro() {
                         exit="exit"
                         custom={step}
                       >
-                        <div className="input-box-login animation-login mb-4">
+
+                          {/* Usuario */}
+                        <div className="input-box-login mb-3">
+                          <label>Usuario</label>
+                          <Form.Control
+                            type="text"
+                            value={usuario}
+                            onChange={(e) => setUsuario(e.target.value)}
+                            required
+                            placeholder=" "
+                          />
+                        </div>
+
+                        <div className="input-box-login mb-4">
+                          <label>Contraseña</label>
                           <Form.Control
                             type="password"
                             value={contrasena}
                             onChange={(e) => setContrasena(e.target.value)}
                             required
-                            placeholder=" "
                             minLength={6}
                           />
-                          <label>Contraseña (mínimo 6 caracteres)</label>
-                          <i className="bx bxs-lock-alt"></i>
                         </div>
 
-                        <div className="input-box-login animation-login mb-4">
+                        <div className="input-box-login mb-4">
+                          <label>Confirmar contraseña</label>
                           <Form.Control
                             type="password"
                             value={confirmar}
                             onChange={(e) => setConfirmar(e.target.value)}
                             required
-                            placeholder=" "
                             minLength={6}
                           />
-                          <label>Confirmar Contraseña</label>
-                          <i className="bx bxs-lock"></i>
                         </div>
 
                         <div className="d-flex justify-content-between mt-4">

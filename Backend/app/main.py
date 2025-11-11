@@ -7,18 +7,31 @@ app = FastAPI(
     description="API completa para gestión de servicios de lavandería"
 )
 
-# Configuración CORS
+# ==========================
+# 🌍 CONFIGURACIÓN CORS
+# ==========================
+origins = [
+    "http://localhost",
+    "http://localhost:5173",
+    "http://127.0.0.1",
+    "http://127.0.0.1:5173",
+    "*"  # Para desarrollo - Quitar en producción
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Permitir todos los orígenes en desarrollo
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Importar rutas de forma segura
+# ==========================
+# 🚀 CARGA DE RUTAS
+# ==========================
 routers_to_include = []
 
+# Importar rutas con manejo de errores individual
 try:
     from app.rutas import autenticacion
     routers_to_include.append(("autenticacion", autenticacion.router))
@@ -38,16 +51,16 @@ except ImportError as e:
     print(f"⚠️ No se pudo cargar personas: {e}")
 
 try:
-    from app.rutas import agendamientos
-    routers_to_include.append(("agendamientos", agendamientos.router))
-except ImportError as e:
-    print(f"⚠️ No se pudo cargar agendamientos: {e}")
-
-try:
     from app.rutas import servicios
     routers_to_include.append(("servicios", servicios.router))
 except ImportError as e:
     print(f"⚠️ No se pudo cargar servicios: {e}")
+
+try:
+    from app.rutas import agendamientos
+    routers_to_include.append(("agendamientos", agendamientos.router))
+except ImportError as e:
+    print(f"⚠️ No se pudo cargar agendamientos: {e}")
 
 try:
     from app.rutas import facturas
@@ -63,13 +76,9 @@ except ImportError as e:
 
 try:
     from app.rutas import formas_pago
-    routers_to_include.append(("formas_pagos", formas_pago.router))
-except ImportError:
-    try:
-        from app.rutas import formas_pago
-        routers_to_include.append(("formas_pago", formas_pago.router))
-    except ImportError as e:
-        print(f"⚠️ No se pudo cargar formas_pago/formas_pagos: {e}")
+    routers_to_include.append(("formas_pago", formas_pago.router))
+except ImportError as e:
+    print(f"⚠️ No se pudo cargar formas_pago: {e}")
 
 try:
     from app.rutas import roles
@@ -77,36 +86,43 @@ try:
 except ImportError as e:
     print(f"⚠️ No se pudo cargar roles: {e}")
 
-
 try:
     from app.rutas import admin_dashboard
     routers_to_include.append(("admin_dashboard", admin_dashboard.router))
 except ImportError as e:
-    print(f"⚠️ No se pudo cargar admin_dashboard: {e}")    
+    print(f"⚠️ No se pudo cargar admin_dashboard: {e}")
 
-# Incluir todos los routers disponibles
+# ==========================
+# 🔗 INCLUIR RUTAS EN LA APP
+# ==========================
 for name, router in routers_to_include:
     app.include_router(router)
     print(f"✅ Router '{name}' cargado correctamente")
 
-# Crear el diccionario de endpoints dinámicamente
+# ==========================
+# 📋 MAPA DE ENDPOINTS
+# ==========================
 endpoints = {}
 for name, _ in routers_to_include:
     if name == "autenticacion":
         endpoints["autenticacion"] = "/login"
-    elif name == "formas_pagos" or name == "formas_pago":
+    elif name in ["formas_pagos", "formas_pago"]:
         endpoints["formas_pago"] = "/formas-pago"
     else:
         endpoints[name] = f"/{name}"
 
+# ==========================
+# 🏠 ENDPOINT PRINCIPAL
+# ==========================
 @app.get("/")
 def root():
     return {
-        "message": "API Servicio Lavadoras funcionando correctamente",
+        "message": "API Servicio Lavadoras funcionando correctamente 🚀",
         "version": "1.0.0",
         "docs": "/docs",
-        "endpoints": endpoints,
-        "routers_cargados": len(routers_to_include)
+        "redoc": "/redoc",
+        "routers_cargados": len(routers_to_include),
+        "endpoints": endpoints
     }
 
 @app.get("/health")
@@ -116,3 +132,4 @@ def health_check():
         "database": "connected",
         "routers_activos": len(routers_to_include)
     }
+

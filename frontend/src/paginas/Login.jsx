@@ -116,13 +116,13 @@ export default function Login() {
 
                 <Form onSubmit={handleSubmit}>
                   <div className="form-group mb-3">
-                    <label className="form-label">Usuario o Email</label>
+                    <label className="form-label">Usuario</label>
                     <Form.Control
                       type="text"
                       name="usuario"
                       value={formData.usuario}
                       onChange={handleChange}
-                      placeholder="Ingresa tu usuario o email"
+                      placeholder="Ingresa tu usuario"
                       className="form-control"
                       required
                     />

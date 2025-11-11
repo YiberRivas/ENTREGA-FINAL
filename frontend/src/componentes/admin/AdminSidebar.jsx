@@ -31,7 +31,7 @@ const AdminSidebar = () => {
           showConfirmButton: false,
         });
 
-        setTimeout(() => navigate("/login"), 1200);
+        setTimeout(() => navigate("/inicio"), 1200);
       }
     });
   };
@@ -42,6 +42,8 @@ const AdminSidebar = () => {
     { path: "/admin/servicios", icon: "fa-cogs", label: "Servicios" },
     { path: "/admin/agendar", icon: "fa-calendar-check", label: "Agendar " },
     { path: "/admin/pagos", icon: "fa-credit-card", label: "Pagos" },
+    { path: "/admin/agendamientos", icon: "fa-list", label: "Agendamientos" },
+    { path: "/admin/facturas", icon: "fa-file-invoice", label: "Facturas" },
   ];
 
   return (

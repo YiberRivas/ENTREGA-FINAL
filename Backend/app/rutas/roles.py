@@ -1,48 +1,43 @@
+# app/rutas/roles.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.config.database import get_db
-from app.modelos.modelos import FormaPago
+from app.modelos.modelos import Rol
 from pydantic import BaseModel
 
-router = APIRouter(prefix="/formas-pago", tags=["Formas de Pago"])
+router = APIRouter(prefix="/roles", tags=["Roles"])
 
-class FormaPagoCreate(BaseModel):
-    nombre_forma: str
-    descripcion: str = None
+class RolCreate(BaseModel):
+    nombre_rol: str
+    descripcion: str | None = None
 
-class FormaPagoResponse(BaseModel):
-    id_forma_pago: int
-    nombre_forma: str
-    descripcion: str = None
+class RolResponse(BaseModel):
+    id_rol: int
+    nombre_rol: str
+    descripcion: str | None = None
 
     class Config:
         from_attributes = True
 
-@router.get("/", response_model=List[FormaPagoResponse])
-def listar_formas_pago(db: Session = Depends(get_db)):
-    """Listar todas las formas de pago"""
-    return db.query(FormaPago).all()
+@router.get("/", response_model=List[RolResponse])
+def listar_roles(db: Session = Depends(get_db)):
+    """Listar todos los roles"""
+    return db.query(Rol).all()
 
-@router.post("/", response_model=FormaPagoResponse, status_code=status.HTTP_201_CREATED)
-def crear_forma_pago(forma: FormaPagoCreate, db: Session = Depends(get_db)):
-    """Crear una nueva forma de pago"""
-    nueva_forma = FormaPago(
-        nombre_forma=forma.nombre_forma,
-        descripcion=forma.descripcion
-    )
-    db.add(nueva_forma)
+@router.post("/", response_model=RolResponse, status_code=status.HTTP_201_CREATED)
+def crear_rol(rol: RolCreate, db: Session = Depends(get_db)):
+    """Crear un nuevo rol"""
+    nuevo_rol = Rol(nombre_rol=rol.nombre_rol, descripcion=rol.descripcion)
+    db.add(nuevo_rol)
     db.commit()
-    db.refresh(nueva_forma)
-    return nueva_forma
+    db.refresh(nuevo_rol)
+    return nuevo_rol
 
-@router.get("/{id_forma_pago}", response_model=FormaPagoResponse)
-def obtener_forma_pago(id_forma_pago: int, db: Session = Depends(get_db)):
-    """Obtener una forma de pago por ID"""
-    forma = db.query(FormaPago).filter(FormaPago.id_forma_pago == id_forma_pago).first()
-    if not forma:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Forma de pago no encontrada"
-        )
-    return forma
+@router.get("/{id_rol}", response_model=RolResponse)
+def obtener_rol(id_rol: int, db: Session = Depends(get_db)):
+    """Obtener un rol por ID"""
+    rol = db.query(Rol).filter(Rol.id_rol == id_rol).first()
+    if not rol:
+        raise HTTPException(status_code=404, detail="Rol no encontrado")
+    return rol

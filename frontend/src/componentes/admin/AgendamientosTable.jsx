@@ -1,11 +1,7 @@
 import React, { useState } from "react";
 import { Card, Table, Button, Form, Row, Col } from "react-bootstrap";
 
-/*
- Props:
-  - data: array de agendamientos
-  - onView, onEdit, onDelete: funciones
-*/
+
 const AgendamientosTable = ({ data = [], onView, onEdit, onDelete }) => {
   const [filter, setFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);

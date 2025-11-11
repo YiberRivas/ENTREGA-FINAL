@@ -1,23 +1,55 @@
 import React, { useEffect, useState } from "react";
-import { Container, Row, Col, Card, Table, Form, InputGroup, Image, Spinner, Badge } from "react-bootstrap";
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Table,
+  Form,
+  Image,
+  Spinner,
+  Badge,
+} from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axiosConfig";
 import Swal from "sweetalert2";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  LineChart,
+  Line,
+  CartesianGrid,
+} from "recharts";
 import "../../assets/estilos/AdminDashboard.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [resumen, setResumen] = useState({ usuarios: 0, lavadoras_activas: 0, agendamientos: 0, pagos: 0 });
+  const [resumen, setResumen] = useState({
+    usuarios: 0,
+    lavadoras_activas: 0,
+    agendamientos: 0,
+    pagos: 0,
+  });
   const [agendamientos, setAgendamientos] = useState([]);
   const [estadisticas, setEstadisticas] = useState(null);
   const [serviciosPopulares, setServiciosPopulares] = useState([]);
+  const [tendenciaSemanal, setTendenciaSemanal] = useState([]);
   const [loading, setLoading] = useState(true);
   const [usuario, setUsuario] = useState("");
   const [filtro, setFiltro] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("");
+  const [paginaActual, setPaginaActual] = useState(1);
+  const itemsPorPagina = 6;
 
-  // 🎯 Colores para los gráficos
   const COLORS = ["#17a2b8", "#28a745", "#ffc107", "#dc3545", "#6610f2"];
 
   useEffect(() => {
@@ -29,23 +61,33 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resResumen, resAg, resEstadisticas, resPopulares] = await Promise.all([
+      const [
+        resResumen,
+        resAg,
+        resEstadisticas,
+        resPopulares,
+        resTendencia,
+      ] = await Promise.all([
         api.get("/admin/resumen"),
-        api.get("/admin/agendamientos_recientes?limite=10"),
+        api.get("/admin/agendamientos_recientes?limite=50"),
         api.get("/admin/estadisticas/mes"),
         api.get("/admin/servicios/populares"),
+        api.get("/admin/tendencia/semana"),
       ]);
 
       setResumen(resResumen.data);
       setAgendamientos(resAg.data);
       setEstadisticas(resEstadisticas.data);
       setServiciosPopulares(resPopulares.data);
+      setTendenciaSemanal(resTendencia.data);
     } catch (error) {
       console.error("Error al obtener datos:", error);
       Swal.fire({
         icon: "error",
         title: "Error al cargar datos",
-        text: error.response?.data?.detail || "No se pudieron obtener los datos del dashboard",
+        text:
+          error.response?.data?.detail ||
+          "No se pudieron obtener los datos del dashboard",
       });
     } finally {
       setLoading(false);
@@ -65,52 +107,62 @@ const AdminDashboard = () => {
 
   const agendamientosFiltrados = agendamientos.filter((a) => {
     const busqueda = filtro.toLowerCase();
-    return (
+    const cumpleTexto =
       a.cliente.toLowerCase().includes(busqueda) ||
-      a.servicio.toLowerCase().includes(busqueda) ||
-      a.estado.toLowerCase().includes(busqueda)
-    );
+      a.servicio.toLowerCase().includes(busqueda);
+    const cumpleEstado = filtroEstado ? a.estado === filtroEstado : true;
+    return cumpleTexto && cumpleEstado;
   });
+
+  const indiceInicial = (paginaActual - 1) * itemsPorPagina;
+  const indiceFinal = indiceInicial + itemsPorPagina;
+  const agendamientosPaginados = agendamientosFiltrados.slice(
+    indiceInicial,
+    indiceFinal
+  );
 
   if (loading) {
     return (
       <div className="d-flex flex-column justify-content-center align-items-center vh-100">
-        <Spinner animation="border" variant="info" style={{ width: "3rem", height: "3rem" }} />
+        <Spinner
+          animation="border"
+          variant="info"
+          style={{ width: "3rem", height: "3rem" }}
+        />
         <p className="mt-3 text-muted">Cargando dashboard...</p>
       </div>
     );
   }
 
   return (
-    <Container fluid className="p-4" style={{ backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
-      {/* Header */}
-      <Row className="align-items-center bg-white shadow-sm rounded mb-4 p-3">
+    <Container fluid className="admin-dashboard p-4">
+      {/* === Header === */}
+      <Row className="dashboard-header align-items-center justify-content-between mb-4">
         <Col md={6}>
-          <InputGroup>
-            <InputGroup.Text>
-              <i className="fas fa-search"></i>
-            </InputGroup.Text>
-            <Form.Control 
-              type="text" 
-              placeholder="Buscar agendamientos..." 
-              value={filtro} 
-              onChange={(e) => setFiltro(e.target.value)} 
-            />
-          </InputGroup>
+          <h3 className="fw-bold text-primary mb-0">
+            <i className="fas fa-tachometer-alt me-2 text-success"></i> Panel
+            Administrativo
+          </h3>
         </Col>
-        <Col md={6} className="d-flex justify-content-end align-items-center gap-3">
-          <span className="fw-bold">{usuario}</span>
-          <Image 
-            src="https://randomuser.me/api/portraits/men/75.jpg" 
-            roundedCircle 
-            width={40} 
-            height={40} 
-            style={{ border: "2px solid #17a2b8" }}
+        <Col
+          md={6}
+          className="d-flex justify-content-end align-items-center gap-3"
+        >
+          <div className="text-end me-2">
+            <p className="mb-0 fw-semibold text-dark">{usuario}</p>
+            <small className="text-muted">Administrador</small>
+          </div>
+          <Image
+            src="https://randomuser.me/api/portraits/men/75.jpg"
+            roundedCircle
+            width={45}
+            height={45}
+            className="user-avatar"
           />
         </Col>
       </Row>
 
-      {/* Resumen */}
+      {/* === Tarjetas resumen === */}
       <Row className="g-3 mb-4">
         {[
           { icon: "users", color: "primary", label: "Usuarios", valor: resumen.usuarios },
@@ -119,75 +171,74 @@ const AdminDashboard = () => {
           { icon: "dollar-sign", color: "info", label: "Pagos Completados", valor: resumen.pagos },
         ].map((c, i) => (
           <Col md={6} lg={3} key={i}>
-            <Card className="shadow-sm border-0 text-center h-100">
-              <Card.Body>
-                <i className={`fas fa-${c.icon} fs-2 text-${c.color} mb-2`}></i>
-                <Card.Title className="small text-muted">{c.label}</Card.Title>
-                <Card.Text className="fs-4 fw-bold text-dark">{c.valor}</Card.Text>
+            <Card className={`summary-card border-0 shadow-sm h-100 summary-${c.color}`}>
+              <Card.Body className="text-center">
+                <div className={`icon-circle bg-${c.color}-soft mb-3`}>
+                  <i className={`fas fa-${c.icon} fs-3 text-${c.color}`}></i>
+                </div>
+                <Card.Title className="small text-uppercase fw-semibold text-muted">{c.label}</Card.Title>
+                <Card.Text className="fs-3 fw-bold text-dark mb-0">{c.valor}</Card.Text>
               </Card.Body>
             </Card>
           </Col>
         ))}
       </Row>
 
-      {/* Estadísticas */}
-      <Row className="g-3 mb-4">
-        <Col lg={6}>
-          <Card className="shadow-sm border-0">
+      {/* === Gráfica: Tendencia Semanal === */}
+      <Row className="g-4 mb-4">
+        <Col lg={12}>
+          <Card className="chart-card border-0 shadow-lg rounded-4">
             <Card.Body>
-              <Card.Title className="text-center mb-3">
-                <i className="fas fa-chart-bar text-info me-2"></i> Estadísticas del mes
+              <Card.Title className="text-center fw-semibold text-dark mb-4">
+                <i className="fas fa-chart-line me-2 text-info"></i> Tendencia Semanal de Agendamientos
               </Card.Title>
-              {estadisticas ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={[estadisticas]}>
-                    <XAxis dataKey="mes" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="agendamientos" fill="#17a2b8" name="Agendamientos" />
-                    <Bar dataKey="servicios_finalizados" fill="#28a745" name="Finalizados" />
-                    <Bar dataKey="ingresos_total" fill="#ffc107" name="Ingresos ($)" />
-                  </BarChart>
+              {tendenciaSemanal.length > 0 ? (
+                <ResponsiveContainer width="100%" height={320}>
+                  <LineChart data={tendenciaSemanal}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e9ecef" />
+                    <XAxis dataKey="semana" tick={{ fill: "#6c757d" }} />
+                    <YAxis tick={{ fill: "#6c757d" }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#fff",
+                        borderRadius: "10px",
+                        border: "1px solid #dee2e6",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                      }}
+                    />
+                    <Legend verticalAlign="bottom" iconType="circle" />
+                    <Line
+                      type="monotone"
+                      dataKey="agendamientos"
+                      stroke="#0d6efd"
+                      strokeWidth={3}
+                      dot={{ r: 5 }}
+                      activeDot={{ r: 7 }}
+                      name="Agendamientos"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="finalizados"
+                      stroke="#198754"
+                      strokeWidth={3}
+                      dot={{ r: 5 }}
+                      activeDot={{ r: 7 }}
+                      name="Finalizados"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="cancelados"
+                      stroke="#dc3545"
+                      strokeWidth={3}
+                      dot={{ r: 5 }}
+                      activeDot={{ r: 7 }}
+                      name="Cancelados"
+                    />
+                  </LineChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="text-center py-5 text-muted">
-                  <p>No hay estadísticas disponibles</p>
-                </div>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col lg={6}>
-          <Card className="shadow-sm border-0">
-            <Card.Body>
-              <Card.Title className="text-center mb-3">
-                <i className="fas fa-chart-pie text-danger me-2"></i> Servicios Populares
-              </Card.Title>
-              {serviciosPopulares.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie 
-                      data={serviciosPopulares} 
-                      dataKey="total_agendamientos" 
-                      nameKey="servicio" 
-                      cx="50%" 
-                      cy="50%" 
-                      outerRadius={100} 
-                      label
-                    >
-                      {serviciosPopulares.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="text-center py-5 text-muted">
-                  <i className="fas fa-chart-pie fa-3x mb-3 text-muted"></i>
-                  <p>No hay datos de servicios</p>
+                  No hay datos de tendencia semanal
                 </div>
               )}
             </Card.Body>
@@ -195,54 +246,208 @@ const AdminDashboard = () => {
         </Col>
       </Row>
 
-      {/* Tabla de Agendamientos */}
-      <Card className="shadow-sm border-0">
+      {/* === Gráficas mensuales y servicios === */}
+      <Row className="g-4 mb-4">
+        <Col lg={6}>
+          <Card className="chart-card border-0 shadow-lg rounded-4">
+            <Card.Body>
+              <Card.Title className="text-center fw-semibold text-dark mb-4">
+                <i className="fas fa-chart-bar me-2 text-primary"></i> Estadísticas del Mes
+              </Card.Title>
+              {estadisticas ? (
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart
+                    data={[
+                      {
+                        mes: estadisticas.mes,
+                        agendamientos: estadisticas.agendamientos,
+                        finalizados: estadisticas.servicios_finalizados,
+                        ingresos: estadisticas.ingresos_total,
+                      },
+                    ]}
+                  >
+                    <XAxis dataKey="mes" tick={{ fill: "#6c757d", fontSize: 13 }} />
+                    <YAxis tick={{ fill: "#6c757d", fontSize: 13 }} />
+                    <Tooltip
+                      cursor={{ fill: "rgba(0,0,0,0.05)" }}
+                      contentStyle={{
+                        backgroundColor: "#fff",
+                        borderRadius: "10px",
+                        border: "1px solid #dee2e6",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                      }}
+                    />
+                    <Bar dataKey="agendamientos" fill="#0d6efd" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="finalizados" fill="#198754" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="ingresos" fill="#ffc107" radius={[8, 8, 0, 0]} />
+                    <Legend verticalAlign="bottom" iconType="circle" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center py-5 text-muted">No hay estadísticas disponibles</div>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col lg={6}>
+          <Card className="chart-card border-0 shadow-lg rounded-4">
+            <Card.Body>
+              <Card.Title className="text-center fw-semibold text-dark mb-4">
+                <i className="fas fa-chart-pie me-2 text-danger"></i> Servicios Más Solicitados
+              </Card.Title>
+              {serviciosPopulares.length > 0 ? (
+                <ResponsiveContainer width="100%" height={320}>
+                  <PieChart>
+                    <Pie
+                      data={serviciosPopulares}
+                      dataKey="total_agendamientos"
+                      nameKey="servicio"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      innerRadius={60}
+                      paddingAngle={5}
+                      stroke="#fff"
+                      strokeWidth={3}
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(1)}%)`}
+                    >
+                      {serviciosPopulares.map((_, index) => (
+                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#fff",
+                        borderRadius: "10px",
+                        border: "1px solid #dee2e6",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                      }}
+                    />
+                    <Legend verticalAlign="bottom" iconType="circle" />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center py-5 text-muted">No hay datos de servicios</div>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* === Tabla de Agendamientos === */}
+      <Card className="agendamientos-card border-0 shadow-lg rounded-4">
         <Card.Body>
-          <Card.Title className="mb-3">
-            <i className="fas fa-calendar-alt me-2 text-info"></i> Agendamientos Recientes
-          </Card.Title>
-          {agendamientosFiltrados.length === 0 ? (
-            <div className="text-center py-5 text-muted">
-              <i className="fas fa-inbox fa-3x mb-3"></i>
-              <p>No hay agendamientos que mostrar</p>
+          <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+            <h5 className="fw-semibold text-dark mb-0">
+              <i className="fas fa-calendar-alt me-2 text-primary"></i> Agendamientos Recientes
+            </h5>
+            <div className="d-flex gap-2 flex-wrap">
+              <Form.Select
+                value={filtroEstado}
+                onChange={(e) => setFiltroEstado(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">Todos los estados</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="confirmado">Confirmado</option>
+                <option value="en_proceso">En Proceso</option>
+                <option value="finalizado">Finalizado</option>
+                <option value="cancelado">Cancelado</option>
+              </Form.Select>
+
+              <Form.Control
+                type="text"
+                placeholder="🔍 Buscar cliente o servicio..."
+                className="search-input"
+                value={filtro}
+                onChange={(e) => setFiltro(e.target.value)}
+              />
             </div>
-          ) : (
-            <div className="table-responsive">
-              <Table hover>
-                <thead className="table-light">
-                  <tr>
-                    <th>ID</th>
-                    <th>Cliente</th>
-                    <th>Servicio</th>
-                    <th>Fecha</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {agendamientosFiltrados.map((item) => {
-                    const estado = getEstadoBadge(item.estado);
-                    return (
-                      <tr key={item.id}>
-                        <td className="fw-bold">#{String(item.id).padStart(3, '0')}</td>
-                        <td>
-                          <i className="fas fa-user-circle me-2 text-muted"></i>
-                          {item.cliente}
-                        </td>
-                        <td>{item.servicio}</td>
-                        <td>
-                          <i className="fas fa-calendar me-2 text-muted"></i>
-                          {item.fecha}
-                        </td>
-                        <td>
-                          <Badge bg={estado.bg}>{estado.text}</Badge>
-                        </td>
+          </div>
+
+          <div style={{ minHeight: "350px" }}>
+            {agendamientosFiltrados.length === 0 ? (
+              <div className="text-center py-5 text-muted">
+                <i className="fas fa-inbox fa-3x mb-3"></i>
+                <p>No hay agendamientos que mostrar</p>
+              </div>
+            ) : (
+              <>
+                <div className="table-responsive">
+                  <Table hover className="align-middle custom-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Servicio</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </Table>
-            </div>
-          )}
+                    </thead>
+                    <tbody>
+                      {agendamientosPaginados.map((item) => {
+                        const estado = getEstadoBadge(item.estado);
+                        return (
+                          <tr key={item.id}>
+                            <td className="fw-bold text-primary">
+                              #{String(item.id).padStart(3, "0")}
+                            </td>
+                            <td>
+                              <i className="fas fa-user-circle me-2 text-secondary"></i>
+                              {item.cliente}
+                            </td>
+                            <td>
+                              <i className="fas fa-cogs me-2 text-muted"></i>
+                              {item.servicio}
+                            </td>
+                            <td>
+                              <i className="fas fa-calendar me-2 text-muted"></i>
+                              {item.fecha}
+                            </td>
+                            <td>
+                              <Badge bg={estado.bg} className="estado-badge">
+                                {estado.text}
+                              </Badge>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </Table>
+                </div>
+
+                {/* === Paginación === */}
+                <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                  <small className="text-muted">
+                    Mostrando {indiceInicial + 1} -{" "}
+                    {Math.min(indiceFinal, agendamientosFiltrados.length)} de{" "}
+                    {agendamientosFiltrados.length}
+                  </small>
+                  <div className="pagination-controls">
+                    <button
+                      className="btn-paginacion"
+                      disabled={paginaActual === 1}
+                      onClick={() => setPaginaActual((prev) => prev - 1)}
+                    >
+                      ◀ Anterior
+                    </button>
+                    <span className="mx-2 fw-semibold text-dark">
+                      {paginaActual}
+                    </span>
+                    <button
+                      className="btn-paginacion"
+                      disabled={indiceFinal >= agendamientosFiltrados.length}
+                      onClick={() => setPaginaActual((prev) => prev + 1)}
+                    >
+                      Siguiente ▶
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </Card.Body>
       </Card>
     </Container>

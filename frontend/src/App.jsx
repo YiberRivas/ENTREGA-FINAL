@@ -9,28 +9,23 @@ import AdminLayout from "./componentes/admin/AdminLayout";
 import AdminInicio from "./componentes/admin/AdminDashboard";
 import Usuarios from "./componentes/admin/Usuarios";
 import Servicios from "./componentes/admin/Servicios";
-import Agendamientos from "./componentes/admin/AgendamientosTable";
-import Pagos from "./componentes/admin/Pagos";
 import Agendar from "./componentes/admin/Agendar";
+import Pagos from "./componentes/admin/Pagos";
+import Facturas from "./componentes/admin/Facturas";
+
+// ✅ NUEVA página de agendamientos (que usa la tabla internamente)
+import AgendamientosPage from "./componentes/admin/AgendamientosPage";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* 🌐 RUTAS PÚBLICAS */}
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
         <Route path="/" element={<Inicio />} />
 
         {/* 🔐 RUTAS PRIVADAS DEL ADMIN */}
-
-        {/* Rutas públicas */}
-        <Route path="/Login" element={<Login />} />
-        <Route path="/Registro" element={<Registro />} />
-        <Route path="/" element={<Inicio />} /> {/* o tu home sin login */}
-        {/* Rutas protegidas */}
-
         <Route
           path="/admin"
           element={
@@ -46,6 +41,10 @@ function App() {
           <Route path="servicios" element={<Servicios />} />
           <Route path="agendar" element={<Agendar />} />
           <Route path="pagos" element={<Pagos />} />
+          <Route path="facturas" element={<Facturas />} />
+
+          {/* ✅ Ruta correcta para la página de agendamientos */}
+          <Route path="agendamientos" element={<AgendamientosPage />} />
         </Route>
 
         {/* ❌ Cualquier otra ruta redirige al inicio */}

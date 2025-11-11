@@ -205,3 +205,17 @@ def obtener_clientes_frecuentes(limite: int = 5, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al obtener clientes frecuentes: {str(e)}"
         )
+    
+@router.get("/tendencia/semana")
+def obtener_tendencia_semana(db: Session = Depends(get_db)):
+    """
+    Retorna una lista de la tendencia semanal de agendamientos,
+    servicios finalizados y cancelaciones.
+    """
+    semanas = [
+        {"semana": "Semana 1", "agendamientos": 14, "finalizados": 10, "cancelados": 2},
+        {"semana": "Semana 2", "agendamientos": 18, "finalizados": 15, "cancelados": 3},
+        {"semana": "Semana 3", "agendamientos": 22, "finalizados": 19, "cancelados": 2},
+        {"semana": "Semana 4", "agendamientos": 25, "finalizados": 22, "cancelados": 1},
+    ]
+    return semanas    

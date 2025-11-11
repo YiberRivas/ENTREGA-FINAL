@@ -8,6 +8,7 @@ import {
   Form,
   Row,
   Col,
+  Pagination,
 } from "react-bootstrap";
 import Swal from "sweetalert2";
 import api from "../../api/axiosConfig";
@@ -21,6 +22,10 @@ const Usuarios = () => {
   const [filtroActivo, setFiltroActivo] = useState("todos");
   const [showModal, setShowModal] = useState(false);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
+
+  // 🔹 Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     obtenerUsuarios();
@@ -49,7 +54,9 @@ const Usuarios = () => {
   // 🔍 Filtrar usuarios según búsqueda y estado
   useEffect(() => {
     let filtrados = usuarios.filter((u) =>
-      (u.usuario || u.username || "").toLowerCase().includes(busqueda.toLowerCase())
+      (u.usuario || u.username || "")
+        .toLowerCase()
+        .includes(busqueda.toLowerCase())
     );
 
     if (filtroActivo !== "todos") {
@@ -59,7 +66,21 @@ const Usuarios = () => {
     }
 
     setFilteredUsuarios(filtrados);
+    setCurrentPage(1);
   }, [busqueda, filtroActivo, usuarios]);
+
+  // 🔢 Calcular usuarios visibles por página
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentUsuarios = filteredUsuarios.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+  const totalPages = Math.ceil(filteredUsuarios.length / itemsPerPage);
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+  };
 
   const formatearFecha = (fecha) => {
     if (!fecha) return "No disponible";
@@ -104,6 +125,12 @@ const Usuarios = () => {
       }
     }
   };
+
+  // 🔹 Mantener 5 filas visibles aunque haya menos datos
+  const emptyRows =
+    currentUsuarios.length < itemsPerPage
+      ? Array.from({ length: itemsPerPage - currentUsuarios.length })
+      : [];
 
   return (
     <div className="d-flex" style={{ minHeight: "100vh" }}>
@@ -155,71 +182,108 @@ const Usuarios = () => {
           </div>
         ) : (
           <Container fluid className="bg-white shadow-sm rounded p-3">
-            <Table hover responsive className="align-middle">
-              <thead className="table-light">
-                <tr>
-                  <th>ID</th>
-                  <th>Usuario</th>
-                  <th>Activo</th>
-                  <th>Fecha de Creación</th>
-                  <th className="text-end">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsuarios.length === 0 ? (
+            <div style={{ minHeight: "400px" }}>
+              <Table
+                hover
+                responsive
+                className="align-middle"
+                style={{ tableLayout: "fixed" }}
+              >
+                <thead className="table-light sticky-top" style={{ top: 0 }}>
                   <tr>
-                    <td colSpan="5" className="text-center text-muted">
-                      No hay usuarios registrados
-                    </td>
+                    <th style={{ width: "20%" }}>ID</th>
+                    <th style={{ width: "20%" }}>Usuario</th>
+                    <th style={{ width: "25%" }}>Activo</th>
+                    <th style={{ width: "25%" }}>Fecha de Creación</th>
+                    <th style={{ width: "20%" }} className="text-end">
+                      Acciones
+                    </th>
                   </tr>
-                ) : (
-                  filteredUsuarios.map((u) => (
-                    <tr key={u.id_usuario || u.id}>
-                      <td>{u.id_usuario || u.id}</td>
-                      <td>{u.usuario || u.username}</td>
-                      <td>
-                        <span
-                          className={`badge ${
-                            u.activo ? "bg-success" : "bg-secondary"
-                          }`}
-                        >
-                          {u.activo ? "Activo" : "Inactivo"}
-                        </span>
-                      </td>
-                      <td>{formatearFecha(u.fecha_creacion)}</td>
-                      <td className="text-end">
-                        <Button
-                          variant="info"
-                          size="sm"
-                          className="me-2"
-                          onClick={() => handleView(u)}
-                        >
-                          <i className="fas fa-eye"></i>
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleDelete(u)}
-                        >
-                          <i className="fas fa-trash"></i>
-                        </Button>
+                </thead>
+                <tbody>
+                  {currentUsuarios.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="text-center text-muted">
+                        No hay usuarios registrados
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </Table>
+                  ) : (
+                    <>
+                      {currentUsuarios.map((u) => (
+                        <tr key={u.id_usuario || u.id} style={{ height: "60px" }}>
+                          <td>{u.id_usuario || u.id}</td>
+                          <td>{u.usuario || u.username}</td>
+                          <td>
+                            <span
+                              className={`badge ${
+                                u.activo ? "bg-success" : "bg-secondary"
+                              }`}
+                            >
+                              {u.activo ? "Activo" : "Inactivo"}
+                            </span>
+                          </td>
+                          <td>{formatearFecha(u.fecha_creacion)}</td>
+                          <td className="text-end">
+                            <Button
+                              variant="info"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => handleView(u)}
+                            >
+                              <i className="fas fa-eye"></i>
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDelete(u)}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                      {/* 🔹 Filas vacías para mantener la altura fija */}
+                      {emptyRows.map((_, i) => (
+                        <tr key={`empty-${i}`} style={{ height: "60px" }}>
+                          <td colSpan="5"></td>
+                        </tr>
+                      ))}
+                    </>
+                  )}
+                </tbody>
+              </Table>
+            </div>
+
+            {/* 🔸 Controles de paginación */}
+            {totalPages > 1 && (
+              <div className="d-flex justify-content-center mt-3">
+                <Pagination>
+                  <Pagination.Prev
+                    disabled={currentPage === 1}
+                    onClick={() => handlePageChange(currentPage - 1)}
+                  />
+                  {[...Array(totalPages)].map((_, i) => (
+                    <Pagination.Item
+                      key={i + 1}
+                      active={i + 1 === currentPage}
+                      onClick={() => handlePageChange(i + 1)}
+                    >
+                      {i + 1}
+                    </Pagination.Item>
+                  ))}
+                  <Pagination.Next
+                    disabled={currentPage === totalPages}
+                    onClick={() => handlePageChange(currentPage + 1)}
+                  />
+                </Pagination>
+              </div>
+            )}
           </Container>
         )}
       </div>
 
       {/* 🪟 Modal de información */}
-      <Modal
-        show={showModal}
-        onHide={() => setShowModal(false)}
-        centered
-        size="md"
-      >
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered size="md">
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="fas fa-user-circle me-2 text-info"></i>
@@ -230,13 +294,16 @@ const Usuarios = () => {
           {usuarioSeleccionado && (
             <>
               <p>
-                <strong>ID:</strong> {usuarioSeleccionado.id_usuario || usuarioSeleccionado.id}
+                <strong>ID:</strong>{" "}
+                {usuarioSeleccionado.id_usuario || usuarioSeleccionado.id}
               </p>
               <p>
-                <strong>Usuario:</strong> {usuarioSeleccionado.usuario || usuarioSeleccionado.username}
+                <strong>Usuario:</strong>{" "}
+                {usuarioSeleccionado.usuario || usuarioSeleccionado.username}
               </p>
               <p>
-                <strong>Activo:</strong> {usuarioSeleccionado.activo ? "Sí" : "No"}
+                <strong>Activo:</strong>{" "}
+                {usuarioSeleccionado.activo ? "Sí" : "No"}
               </p>
               <p>
                 <strong>Fecha de creación:</strong>{" "}
