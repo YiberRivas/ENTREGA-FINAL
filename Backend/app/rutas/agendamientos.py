@@ -10,9 +10,8 @@ from app.modelos.modelos import (
 from pydantic import BaseModel
 from decimal import Decimal
 
-router = APIRouter(prefix="/agendamientos", tags=["Agendamientos"])
-
-# ==================== ESQUEMAS ====================
+# ⚠️ El prefijo /agendamientos lo añade main.py
+router = APIRouter(tags=["Agendamientos"])
 
 # ==================== ESQUEMAS ====================
 
@@ -56,7 +55,6 @@ class FinalizacionResponse(BaseModel):
         from_attributes = True
 
 
-# ✅ AGREGA ESTA CLASE AQUÍ
 class FinalizarRequest(BaseModel):
     agendamiento_id: int
     observaciones: Optional[str] = None
@@ -70,7 +68,7 @@ def listar_agendamientos(
     estado: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    """Listar agendamientos con opción de filtrar por estado"""
+    """Listar agendamientos con datos completos."""
     query = db.query(Agendamiento)
     if estado:
         query = query.filter(Agendamiento.estado == estado)
@@ -99,12 +97,13 @@ def listar_agendamientos(
                 "duracion_minutos": ag.servicio.duracion_minutos
             } if ag.servicio else None
         })
+
     return resultado
 
 
 @router.post("/", response_model=AgendamientoResponse, status_code=status.HTTP_201_CREATED)
 def crear_agendamiento(ag: AgendamientoCreate, db: Session = Depends(get_db)):
-    """Crear un nuevo agendamiento"""
+    """Crear un nuevo agendamiento."""
     persona = db.query(Persona).filter(Persona.id_persona == ag.persona_id).first()
     if not persona:
         raise HTTPException(status_code=404, detail="Persona no encontrada")
@@ -139,36 +138,38 @@ def crear_agendamiento(ag: AgendamientoCreate, db: Session = Depends(get_db)):
             "apellidos": nuevo.persona.apellidos,
             "correo": nuevo.persona.correo,
             "telefono": nuevo.persona.telefono
-        } if nuevo.persona else None,
+        },
         "servicio": {
             "nombre_servicio": nuevo.servicio.nombre_servicio,
             "precio_base": float(nuevo.servicio.precio_base),
             "duracion_minutos": nuevo.servicio.duracion_minutos
-        } if nuevo.servicio else None
+        }
     }
 
 
 @router.put("/{id_agendamiento}/estado")
 def actualizar_estado(id_agendamiento: int, nuevo_estado: EstadoAgendamiento, db: Session = Depends(get_db)):
-    """Actualizar el estado de un agendamiento"""
+    """Actualizar el estado de un agendamiento."""
     ag = db.query(Agendamiento).filter(Agendamiento.id_agendamiento == id_agendamiento).first()
     if not ag:
         raise HTTPException(status_code=404, detail="Agendamiento no encontrado")
 
     ag.estado = nuevo_estado
     db.commit()
+
     return {"message": f"Estado actualizado a {nuevo_estado.value}"}
 
 
 @router.delete("/{id_agendamiento}")
 def eliminar_agendamiento(id_agendamiento: int, db: Session = Depends(get_db)):
-    """Eliminar un agendamiento"""
+    """Eliminar un agendamiento."""
     ag = db.query(Agendamiento).filter(Agendamiento.id_agendamiento == id_agendamiento).first()
     if not ag:
         raise HTTPException(status_code=404, detail="Agendamiento no encontrado")
 
     db.delete(ag)
     db.commit()
+
     return {"message": "Agendamiento eliminado correctamente"}
 
 
@@ -176,14 +177,13 @@ def eliminar_agendamiento(id_agendamiento: int, db: Session = Depends(get_db)):
 
 @router.post("/finalizar")
 def finalizar_servicio(data: FinalizarRequest, db: Session = Depends(get_db)):
+    """Finalizar servicio y generar factura automáticamente."""
     ag = db.query(Agendamiento).filter(Agendamiento.id_agendamiento == data.agendamiento_id).first()
     if not ag:
         raise HTTPException(status_code=404, detail="Agendamiento no encontrado")
 
-    # Cambiar estado
     ag.estado = EstadoAgendamiento.finalizado
 
-    # Registrar finalización
     finalizacion = FinalizacionServicio(
         agendamiento_id=ag.id_agendamiento,
         observaciones=data.observaciones,
@@ -191,23 +191,20 @@ def finalizar_servicio(data: FinalizarRequest, db: Session = Depends(get_db)):
     )
     db.add(finalizacion)
 
-    # Crear factura automática
     monto = ag.servicio.precio_base if ag.servicio else Decimal("0.00")
 
     factura = Factura(
         persona_id=ag.persona_id,
         agendamiento_id=ag.id_agendamiento,
         total=monto,
-        forma_pago_id=1,  # por defecto efectivo
+        forma_pago_id=1,
         fecha=datetime.now(),
         estado=EstadoFactura.emitida
     )
+
     db.add(factura)
     db.commit()
     db.refresh(factura)
-
-    persona = ag.persona
-    servicio = ag.servicio
 
     return {
         "message": "Servicio finalizado y factura generada correctamente",
@@ -217,18 +214,7 @@ def finalizar_servicio(data: FinalizarRequest, db: Session = Depends(get_db)):
             "total": float(factura.total),
             "estado": factura.estado.value,
             "forma_pago_id": factura.forma_pago_id,
-        },
-        "cliente": {
-            "nombres": persona.nombres,
-            "apellidos": persona.apellidos,
-            "identificacion": persona.identificacion,
-            "correo": persona.correo,
-            "telefono": persona.telefono
-        } if persona else None,
-        "servicio": {
-            "nombre_servicio": servicio.nombre_servicio,
-            "precio_base": float(servicio.precio_base)
-        } if servicio else None
+        }
     }
 
 
@@ -236,7 +222,7 @@ def finalizar_servicio(data: FinalizarRequest, db: Session = Depends(get_db)):
 
 @router.get("/persona/{persona_id}/historial")
 def obtener_historial_persona(persona_id: int, db: Session = Depends(get_db)):
-    """Obtener historial de servicios finalizados por persona"""
+    """Historial de servicios finalizados por persona."""
     ags = db.query(Agendamiento).filter(
         Agendamiento.persona_id == persona_id,
         Agendamiento.estado == EstadoAgendamiento.finalizado
@@ -247,6 +233,7 @@ def obtener_historial_persona(persona_id: int, db: Session = Depends(get_db)):
         fin = db.query(FinalizacionServicio).filter(
             FinalizacionServicio.agendamiento_id == ag.id_agendamiento
         ).first()
+
         historial.append({
             "id_agendamiento": ag.id_agendamiento,
             "fecha": ag.fecha,
@@ -267,26 +254,3 @@ def obtener_historial_persona(persona_id: int, db: Session = Depends(get_db)):
         "total_servicios": len(historial),
         "historial": historial
     }
-
-@router.get("/admin/agendamientos_recientes")
-def agendamientos_recientes(limite: int = 50, db: Session = Depends(get_db)):
-    ags = (
-    db.query(Agendamiento)
-        .order_by(Agendamiento.id_agendamiento.desc())
-        .limit(limite)
-        .all()
-    )
-      
-    return [
-        {
-            "id": a.id_agendamiento,
-            "cliente": f"{a.persona.nombres} {a.persona.apellidos}" if a.persona else "",
-            "servicio": a.servicio.nombre_servicio if a.servicio else "",
-            "fecha": str(a.fecha),
-            "estado": a.estado.value,
-        }
-        for a in ags
-    ]
-
-
-

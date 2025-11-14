@@ -1,0 +1,50 @@
+.perfil-cliente-container {
+  background: linear-gradient(135deg, #f7faff, #eef2f7);
+  min-height: 100vh;
+  font-family: 'Poppins', sans-serif;
+}
+
+.perfil-cliente-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 1.8rem;
+  transition: all 0.3s ease-in-out;
+}
+
+.perfil-cliente-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+}
+
+.perfil-info p {
+  font-size: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+button.btn-outline-primary {
+  border-radius: 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+button.btn-outline-primary:hover {
+  background: #0d6efd;
+  color: #fff;
+}
+
+form label {
+  font-weight: 500;
+  color: #495057;
+}
+
+form input {
+  border-radius: 10px;
+  padding: 0.6rem;
+  border: 1px solid #ced4da;
+  transition: all 0.2s ease;
+}
+
+form input:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.2);
+}

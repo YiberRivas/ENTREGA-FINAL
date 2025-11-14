@@ -22,7 +22,7 @@ export default function Inicio() {
       ubicacion: "Centro Comercial Unicentro - Bogotá",
       capacidad: "10 kg",
       precio: "$3.000",
-      imagen: "https://images.samsung.com/is/image/samsung/p6pim/co/ww90t554dan-gallery-532825812?$650_519_PNG$"
+      /* imagen: "://images.samsung.com/is/image/samsung/p6pim/co/ww90t554dan-gallery-532825812?$650_519_PNG$" */
     },
     {
       nombre: "Mabe Lma11700pbbo",
@@ -98,7 +98,7 @@ export default function Inicio() {
               </h1>
               <p className="hero-description">
                 Alquila lavadoras de alta calidad por horas. Perfecto para tu hogar, negocio o eventos especiales.
-                Solo $3.000 por hora, máximo 4 horas.
+                Solo $3.000 por hora, minimo 4 horas en adelante.
               </p>
               <div className="hero-stats">
                 <div className="stat">
@@ -195,22 +195,6 @@ export default function Inicio() {
                 />
               </Col>
             ))}
-          </Row>
-        </Container>
-      </section>
-
-      {/* CTA SECTION */}
-      <section className="cta-section">
-        <Container>
-          <Row className="justify-content-center text-center">
-            <Col lg={8}>
-              <h2>¿Listo para lavar tu ropa?</h2>
-              <p>Únete a miles de clientes satisfechos y disfruta de ropa limpia cuando la necesites</p>
-              <div className="cta-actions">
-                <a href="/registro" className="btn btn-primary btn-lg">Registrarse Gratis</a>
-                <a href="/login" className="btn btn-outline btn-lg">Iniciar Sesión</a>
-              </div>
-            </Col>
           </Row>
         </Container>
       </section>

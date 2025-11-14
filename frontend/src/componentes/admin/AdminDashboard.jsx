@@ -6,7 +6,6 @@ import {
   Card,
   Table,
   Form,
-  Image,
   Spinner,
   Badge,
 } from "react-bootstrap";
@@ -44,7 +43,6 @@ const AdminDashboard = () => {
   const [serviciosPopulares, setServiciosPopulares] = useState([]);
   const [tendenciaSemanal, setTendenciaSemanal] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [usuario, setUsuario] = useState("");
   const [filtro, setFiltro] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("");
   const [paginaActual, setPaginaActual] = useState(1);
@@ -53,8 +51,6 @@ const AdminDashboard = () => {
   const COLORS = ["#17a2b8", "#28a745", "#ffc107", "#dc3545", "#6610f2"];
 
   useEffect(() => {
-    const nombreUsuario = localStorage.getItem("usuario");
-    setUsuario(nombreUsuario || "Admin");
     fetchData();
   }, []);
 
@@ -136,32 +132,6 @@ const AdminDashboard = () => {
 
   return (
     <Container fluid className="admin-dashboard p-4">
-      {/* === Header === */}
-      <Row className="dashboard-header align-items-center justify-content-between mb-4">
-        <Col md={6}>
-          <h3 className="fw-bold text-primary mb-0">
-            <i className="fas fa-tachometer-alt me-2 text-success"></i> Panel
-            Administrativo
-          </h3>
-        </Col>
-        <Col
-          md={6}
-          className="d-flex justify-content-end align-items-center gap-3"
-        >
-          <div className="text-end me-2">
-            <p className="mb-0 fw-semibold text-dark">{usuario}</p>
-            <small className="text-muted">Administrador</small>
-          </div>
-          <Image
-            src="https://randomuser.me/api/portraits/men/75.jpg"
-            roundedCircle
-            width={45}
-            height={45}
-            className="user-avatar"
-          />
-        </Col>
-      </Row>
-
       {/* === Tarjetas resumen === */}
       <Row className="g-3 mb-4">
         {[

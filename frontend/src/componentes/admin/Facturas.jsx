@@ -206,7 +206,7 @@ const Facturas = () => {
                           <th style={{ width: "10%" }}>Estado</th>
                           <th>Forma de Pago</th>
                           <th style={{ width: "15%" }}>Fecha</th>
-                          <th style={{ width: "10%" }}>Acciones</th>
+                          <th style={{ width: "12%" }}>Acciones</th>
                         </tr>
                       </thead>
                       <tbody>

@@ -28,9 +28,9 @@ export default function Encabezado() {
 
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="ms-auto d-flex align-items-center nav-links">
-              <Nav.Link as={Link} to="/login" onClick={() => setExpanded(false)}>
+              <Button as={Link} to="/login" onClick={() => setExpanded(false)}>
                 Iniciar Sesión
-              </Nav.Link>
+              </Button>
               <Button as={Link} to="/registro" className="btn btn-primary ms-2" onClick={() => setExpanded(false)}>
                 Registrarse
               </Button>

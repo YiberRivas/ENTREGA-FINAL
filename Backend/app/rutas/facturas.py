@@ -9,8 +9,8 @@ from decimal import Decimal
 from datetime import datetime
 from jinja2 import Template
 
-# ✅ Router principal
-router = APIRouter(prefix="/facturas", tags=["Facturas"])
+# ⚠️ SIN PREFIJO — se agrega desde main.py
+router = APIRouter(tags=["Facturas"])
 
 # =========================
 # 📦 ESQUEMAS
@@ -41,7 +41,7 @@ class FacturaCreate(BaseModel):
 
 class FacturaResponse(BaseModel):
     id_factura: int
-    persona: Optional [PersonaResponse] = None
+    persona: Optional[PersonaResponse] = None
     total: Decimal
     forma_pago: Optional[FormaPagoResponse] = None
     estado: str
@@ -52,11 +52,10 @@ class FacturaResponse(BaseModel):
 
 
 # =========================
-# 🔹 CRUD BÁSICO DE FACTURAS
+# 🔹 CRUD BÁSICO
 # =========================
 @router.get("/", response_model=List[FacturaResponse])
 def listar_facturas(db: Session = Depends(get_db)):
-    """Listar todas las facturas con datos del cliente y forma de pago"""
     try:
         facturas = (
             db.query(Factura)
@@ -73,7 +72,6 @@ def listar_facturas(db: Session = Depends(get_db)):
 
 @router.post("/", response_model=FacturaResponse, status_code=status.HTTP_201_CREATED)
 def crear_factura(factura: FacturaCreate, db: Session = Depends(get_db)):
-    """Crear una nueva factura"""
     try:
         nueva_factura = Factura(
             persona_id=factura.persona_id,
@@ -85,7 +83,9 @@ def crear_factura(factura: FacturaCreate, db: Session = Depends(get_db)):
         db.add(nueva_factura)
         db.commit()
         db.refresh(nueva_factura)
+
         return nueva_factura
+
     except Exception as e:
         db.rollback()
         raise HTTPException(
@@ -96,7 +96,6 @@ def crear_factura(factura: FacturaCreate, db: Session = Depends(get_db)):
 
 @router.get("/{id_factura}", response_model=FacturaResponse)
 def obtener_factura(id_factura: int, db: Session = Depends(get_db)):
-    """Obtener una factura por ID"""
     factura = (
         db.query(Factura)
         .options(joinedload(Factura.persona), joinedload(Factura.forma_pago))
@@ -104,33 +103,26 @@ def obtener_factura(id_factura: int, db: Session = Depends(get_db)):
         .first()
     )
     if not factura:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Factura no encontrada"
-        )
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+
     return factura
 
 
 @router.put("/{id_factura}/estado")
-def actualizar_estado_factura(
-    id_factura: int, nuevo_estado: EstadoFactura, db: Session = Depends(get_db)
-):
-    """Actualizar estado de una factura"""
+def actualizar_estado_factura(id_factura: int, nuevo_estado: EstadoFactura, db: Session = Depends(get_db)):
     factura = db.query(Factura).filter(Factura.id_factura == id_factura).first()
+
     if not factura:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Factura no encontrada"
-        )
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
 
     factura.estado = nuevo_estado
     db.commit()
+
     return {"message": "Estado de factura actualizado correctamente"}
 
 
 @router.get("/persona/{persona_id}", response_model=List[FacturaResponse])
 def obtener_facturas_persona(persona_id: int, db: Session = Depends(get_db)):
-    """Obtener todas las facturas de una persona"""
     return (
         db.query(Factura)
         .options(joinedload(Factura.persona), joinedload(Factura.forma_pago))
@@ -140,74 +132,54 @@ def obtener_facturas_persona(persona_id: int, db: Session = Depends(get_db)):
 
 
 # =========================
-# 🧾 VISTA HTML DE FACTURA
+# 🧾 VISTA HTML
 # =========================
 @router.get("/ver/{factura_id}", response_class=HTMLResponse)
 def ver_factura(factura_id: int, db: Session = Depends(get_db)):
-    """Vista HTML de una factura específica (para QR o navegador)"""
     factura = (
         db.query(Factura)
         .options(joinedload(Factura.persona))
         .filter(Factura.id_factura == factura_id)
         .first()
     )
+
     if not factura:
         return HTMLResponse("<h1>Factura no encontrada</h1>", status_code=404)
 
     cliente = factura.persona
 
-    # CSS básico inline
     css_content = """
-        body { 
-            font-family: Arial, sans-serif; 
-            max-width: 800px; 
-            margin: 50px auto; 
-            padding: 20px;
-            background: #f5f5f5;
-        }
-        .factura {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 { color: #17a2b8; }
-        .info { margin: 10px 0; }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #f1f1f1; }
+        .factura { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        h1 { color: #007bff; }
+        p { margin: 6px 0; }
         hr { margin: 20px 0; }
     """
 
     html_template = Template("""
-    <!DOCTYPE html>
-    <html lang="es">
+    <html>
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Factura N° {{ factura.id_factura }}</title>
         <style>{{ css }}</style>
     </head>
     <body>
         <div class="factura">
             <h1>🧾 Factura N° {{ factura.id_factura }}</h1>
-            <div class="info">
-                <p><strong>Cliente:</strong> {{ cliente.nombres }} {{ cliente.apellidos }}</p>
-                <p><strong>Correo:</strong> {{ cliente.correo }}</p>
-                <p><strong>Total:</strong> ${{ "{:,.2f}".format(factura.total) }}</p>
-                <p><strong>Estado:</strong> {{ factura.estado }}</p>
-                <p><strong>Fecha:</strong> {{ factura.fecha.strftime("%d/%m/%Y %H:%M") }}</p>
-            </div>
+            <p><strong>Cliente:</strong> {{ cliente.nombres }} {{ cliente.apellidos }}</p>
+            <p><strong>Correo:</strong> {{ cliente.correo }}</p>
+            <p><strong>Total:</strong> ${{ "{:,.2f}".format(factura.total) }}</p>
+            <p><strong>Estado:</strong> {{ factura.estado }}</p>
+            <p><strong>Fecha:</strong> {{ factura.fecha.strftime("%d/%m/%Y %H:%M") }}</p>
             <hr>
-            <p style="text-align: center; color: #666;">
-                Gracias por su compra - Servilavadora S.A.S
-            </p>
+            <p style="text-align:center;color:#666;">Gracias por confiar en nosotros - Servilavadora S.A.S</p>
         </div>
     </body>
     </html>
     """)
 
-    html_content = html_template.render(
-        factura=factura, 
-        cliente=cliente, 
+    return HTMLResponse(html_template.render(
+        factura=factura,
+        cliente=cliente,
         css=css_content
-    )
-
-    return HTMLResponse(content=html_content)
+    ))

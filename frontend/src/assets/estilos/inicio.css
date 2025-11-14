@@ -1,7 +1,7 @@
 /* inicio.css */
 :root {
     --primary: #00C6B3;
-    --primary-dark: #00A895;
+    --primary-dark: #62b1c5;
     --primary-light: #4DEDD5;
     --secondary: #FF7B7B;
     --accent: #FFC145;
@@ -9,7 +9,7 @@
     --darker: #16213e;
     --light: #f8f9fa;
     --light-blue: #E6F7FF;
-    --text: #333333;
+    --text: #0a0909;
     --text-light: #6c757d;
     --white: #ffffff;
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -82,7 +82,7 @@ p {
     left: 0;
     width: 0%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(59, 4, 128, 0.2);
     transition: var(--transition);
     z-index: -1;
 }
@@ -94,14 +94,13 @@ p {
 .btn-primary {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: var(--white);
-    box-shadow: 0 5px 15px rgba(0, 198, 179, 0.4);
+    box-shadow: 0 5px 15px rgba(90, 144, 167, 0.518);
 }
 
 .btn-primary:hover {
     transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(0, 198, 179, 0.6);
+    box-shadow: 0 10px 25px rgba(90, 144, 167, 0.718);
 }
-
 .btn-secondary {
     background: linear-gradient(135deg, var(--secondary) 0%, #ff5252 100%);
     color: var(--white);

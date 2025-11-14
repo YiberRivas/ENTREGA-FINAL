@@ -5,7 +5,8 @@ from app.config.database import get_db
 from app.modelos.modelos import FormaPago
 from pydantic import BaseModel
 
-router = APIRouter(prefix="/formas-pago", tags=["Formas de Pago"])
+# ❗ Sin prefijo — main.py ya lo añade: /formas_pago
+router = APIRouter(tags=["Formas de Pago"])
 
 class FormaPagoCreate(BaseModel):
     nombre_forma: str
@@ -19,10 +20,12 @@ class FormaPagoResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 @router.get("/", response_model=List[FormaPagoResponse])
 def listar_formas_pago(db: Session = Depends(get_db)):
     """Listar todas las formas de pago"""
     return db.query(FormaPago).all()
+
 
 @router.post("/", response_model=FormaPagoResponse, status_code=status.HTTP_201_CREATED)
 def crear_forma_pago(forma: FormaPagoCreate, db: Session = Depends(get_db)):
@@ -35,6 +38,7 @@ def crear_forma_pago(forma: FormaPagoCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(nueva_forma)
     return nueva_forma
+
 
 @router.get("/{id_forma_pago}", response_model=FormaPagoResponse)
 def obtener_forma_pago(id_forma_pago: int, db: Session = Depends(get_db)):

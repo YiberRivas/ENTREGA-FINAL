@@ -1,5 +1,14 @@
 from fastapi import FastAPI
+from sqlalchemy.orm import Session
+from app.config.database import SessionLocal
+from app.modelos.modelos import Rol
 from fastapi.middleware.cors import CORSMiddleware
+# Importar todas las rutas
+from app.rutas import (
+    autenticacion, usuarios, personas, servicios, agendamientos,
+    facturas, pagos, formas_pago, roles, admin_dashboard,
+    cliente_dashboard, clientes
+)
 
 app = FastAPI(
     title="API Servicio Lavadoras",
@@ -10,17 +19,9 @@ app = FastAPI(
 # ==========================
 # 🌍 CONFIGURACIÓN CORS
 # ==========================
-origins = [
-    "http://localhost",
-    "http://localhost:5173",
-    "http://127.0.0.1",
-    "http://127.0.0.1:5173",
-    "*"  # Para desarrollo - Quitar en producción
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permitir todos los orígenes en desarrollo
+    allow_origins=["*"],  # permite frontend en cualquier puerto
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,87 +30,41 @@ app.add_middleware(
 # ==========================
 # 🚀 CARGA DE RUTAS
 # ==========================
-routers_to_include = []
+routers_map = {
+    "autenticacion": autenticacion.router,
+    "usuarios": usuarios.router,
+    "personas": personas.router,
+    "servicios": servicios.router,
+    "agendamientos": agendamientos.router,
+    "facturas": facturas.router,
+    "pagos": pagos.router,
+    "formas_pago": formas_pago.router,
+    "roles": roles.router,
+    "admin_dashboard": admin_dashboard.router,
+    "cliente_dashboard": cliente_dashboard.router,
+    "clientes": clientes.router
+}
 
-# Importar rutas con manejo de errores individual
-try:
-    from app.rutas import autenticacion
-    routers_to_include.append(("autenticacion", autenticacion.router))
-except ImportError as e:
-    print(f"⚠️ No se pudo cargar autenticacion: {e}")
+# Prefijos reales (sin duplicar)
+router_prefixes = {
+    "autenticacion": "/autenticacion",
+    "usuarios": "/usuarios",
+    "personas": "/personas",
+    "servicios": "/servicios",
+    "agendamientos": "/agendamientos",
+    "facturas": "/facturas",
+    "pagos": "/pagos",
+    "formas_pago": "/formas_pago",
+    "roles": "/roles",
+    "admin_dashboard": "/admin",
+    "cliente_dashboard": "/cliente",
+    "clientes": "/clientes",
+}
 
-try:
-    from app.rutas import usuarios
-    routers_to_include.append(("usuarios", usuarios.router))
-except ImportError as e:
-    print(f"⚠️ No se pudo cargar usuarios: {e}")
-
-try:
-    from app.rutas import personas
-    routers_to_include.append(("personas", personas.router))
-except ImportError as e:
-    print(f"⚠️ No se pudo cargar personas: {e}")
-
-try:
-    from app.rutas import servicios
-    routers_to_include.append(("servicios", servicios.router))
-except ImportError as e:
-    print(f"⚠️ No se pudo cargar servicios: {e}")
-
-try:
-    from app.rutas import agendamientos
-    routers_to_include.append(("agendamientos", agendamientos.router))
-except ImportError as e:
-    print(f"⚠️ No se pudo cargar agendamientos: {e}")
-
-try:
-    from app.rutas import facturas
-    routers_to_include.append(("facturas", facturas.router))
-except ImportError as e:
-    print(f"⚠️ No se pudo cargar facturas: {e}")
-
-try:
-    from app.rutas import pagos
-    routers_to_include.append(("pagos", pagos.router))
-except ImportError as e:
-    print(f"⚠️ No se pudo cargar pagos: {e}")
-
-try:
-    from app.rutas import formas_pago
-    routers_to_include.append(("formas_pago", formas_pago.router))
-except ImportError as e:
-    print(f"⚠️ No se pudo cargar formas_pago: {e}")
-
-try:
-    from app.rutas import roles
-    routers_to_include.append(("roles", roles.router))
-except ImportError as e:
-    print(f"⚠️ No se pudo cargar roles: {e}")
-
-try:
-    from app.rutas import admin_dashboard
-    routers_to_include.append(("admin_dashboard", admin_dashboard.router))
-except ImportError as e:
-    print(f"⚠️ No se pudo cargar admin_dashboard: {e}")
-
-# ==========================
-# 🔗 INCLUIR RUTAS EN LA APP
-# ==========================
-for name, router in routers_to_include:
-    app.include_router(router)
-    print(f"✅ Router '{name}' cargado correctamente")
-
-# ==========================
-# 📋 MAPA DE ENDPOINTS
-# ==========================
-endpoints = {}
-for name, _ in routers_to_include:
-    if name == "autenticacion":
-        endpoints["autenticacion"] = "/login"
-    elif name in ["formas_pagos", "formas_pago"]:
-        endpoints["formas_pago"] = "/formas-pago"
-    else:
-        endpoints[name] = f"/{name}"
+for name, router in routers_map.items():
+    prefix = router_prefixes.get(name, f"/{name}")
+    app.include_router(router, prefix=prefix)
+    print(f"✅ Router '{name}' cargado en: {prefix}")
 
 # ==========================
 # 🏠 ENDPOINT PRINCIPAL
@@ -120,16 +75,30 @@ def root():
         "message": "API Servicio Lavadoras funcionando correctamente 🚀",
         "version": "1.0.0",
         "docs": "/docs",
-        "redoc": "/redoc",
-        "routers_cargados": len(routers_to_include),
-        "endpoints": endpoints
+        "routers": list(router_prefixes.values())
     }
 
 @app.get("/health")
 def health_check():
-    return {
-        "status": "healthy",
-        "database": "connected",
-        "routers_activos": len(routers_to_include)
-    }
+    return {"status": "healthy"}
 
+# ==========================
+# 👑 CREAR ROLES BASE AUTOMÁTICOS
+# ==========================
+def crear_roles_base():
+    db: Session = SessionLocal()
+    try:
+        roles = ["Administrador", "Cliente"]
+        for nombre in roles:
+            if not db.query(Rol).filter(Rol.nombre_rol == nombre).first():
+                nuevo_rol = Rol(nombre_rol=nombre)
+                db.add(nuevo_rol)
+        db.commit()
+        print("✅ Roles base creados correctamente.")
+    except Exception as e:
+        print(f"⚠️ Error al crear roles base: {e}")
+    finally:
+        db.close()
+
+# Crear roles al iniciar
+crear_roles_base()

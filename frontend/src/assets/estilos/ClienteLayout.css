@@ -1,0 +1,54 @@
+/* === CLIENTE LAYOUT === */
+.cliente-navbar {
+  background: linear-gradient(90deg, #ffffff, #f7f9fb);
+  border-bottom: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.cliente-navbar .navbar-brand {
+  font-size: 1.2rem;
+  letter-spacing: 0.5px;
+}
+
+.nav-link {
+  font-weight: 500;
+  color: #ffffff !important;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  transition: all 0.25s ease;
+}
+
+.nav-link:hover {
+  background-color: #4cab87;
+  color: #121212 !important;
+}
+
+.active-link {
+  background-color: #0d6efd !important;
+  color: white !important;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(96, 129, 179, 0.25);
+}
+
+.cliente-content {
+  min-height: 70vh;
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+/* Imagen usuario */
+.navbar img {
+  transition: transform 0.3s ease;
+}
+.navbar img:hover {
+  transform: scale(1.1);
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .cliente-content {
+    padding: 1rem;
+  }
+}

@@ -53,17 +53,9 @@ class Rol(Base):
     nombre_rol = Column(String(50), nullable=False)
     descripcion = Column(String(255))
 
+    # Relaciones
+    usuarios = relationship("Usuario", back_populates="rol")
     personas = relationship("Persona", back_populates="rol")
-
-
-class TipoIdentificacion(Base):
-    __tablename__ = "tipo_identificacion"
-
-    id_tipo_identificacion = Column(Integer, primary_key=True, autoincrement=True)
-    nombre_tipo = Column(String(50), nullable=False)
-    abreviacion = Column(String(10))
-
-    personas = relationship("Persona", back_populates="tipo_identificacion")
 
 
 class Persona(Base):
@@ -96,10 +88,26 @@ class Usuario(Base):
     usuario = Column(String(80), unique=True, nullable=False)
     contrasena_hash = Column(String(255), nullable=False)
     persona_id = Column(Integer, ForeignKey("persona.id_persona"))
+    rol_id = Column(Integer, ForeignKey("rol.id_rol"))  
     activo = Column(Boolean, default=True)
     fecha_creacion = Column(TIMESTAMP)
 
+    # Relaciones
     persona = relationship("Persona", back_populates="usuarios")
+    rol = relationship("Rol", back_populates="usuarios")
+
+
+
+class TipoIdentificacion(Base):
+    __tablename__ = "tipo_identificacion"
+
+    id_tipo_identificacion = Column(Integer, primary_key=True, autoincrement=True)
+    nombre_tipo = Column(String(50), nullable=False)
+    abreviacion = Column(String(10))
+
+    personas = relationship("Persona", back_populates="tipo_identificacion")
+
+
 
 
 class Servicio(Base):

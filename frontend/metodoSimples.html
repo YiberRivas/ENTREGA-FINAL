@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Calculadora Simplex — Dos Fases</title>
+<style>
+  :root{
+    --bg:#f5f7fb;
+    --card:#ffffff;
+    --accent:#2b6cb0;
+    --muted:#6b7280;
+    --success:#21a366;
+    --danger:#e11d48;
+    --shadow: 0 6px 18px rgba(15,23,42,0.08);
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    background:var(--bg);
+    margin:0;
+    padding:28px;
+    color:#111827;
+  }
+  .container{
+    max-width:1100px;
+    margin:0 auto;
+  }
+  header{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin-bottom:20px;
+  }
+  h1{
+    font-size:1.25rem;
+    margin:0;
+  }
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:18px;
+    box-shadow:var(--shadow);
+    margin-bottom:18px;
+  }
+
+  .row{display:flex; gap:16px; align-items:center; flex-wrap:wrap;}
+  label{font-weight:600; color:var(--muted); font-size:0.95rem;}
+  input[type="number"], select{
+    padding:8px 10px; border:1px solid #e6e9ef; border-radius:8px; font-size:0.95rem;
+    width:110px;
+  }
+  button.btn{
+    background:var(--accent); color:white; border:none; padding:10px 14px; border-radius:8px; cursor:pointer;
+  }
+  button.btn.secondary{background:#64748b}
+  .input-section{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; align-items:end}
+  .small{font-size:0.85rem; color:var(--muted)}
+  .restriction-row{display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;}
+  .restriction-row input{width:80px}
+
+  .table-container{overflow:auto; margin-top:12px;}
+  table{border-collapse:collapse; width:100%}
+  th,td{border:1px solid #e6e9ef; padding:8px; text-align:center; min-width:56px; font-size:0.92rem}
+  th{background:#eef2ff; color:#111827; font-weight:700}
+  .pivot-cell{background:#fde68a; font-weight:700}
+  .pivot-row{background:#f8fafc}
+  .info{padding:10px; border-radius:8px; background:#f1f5f9; margin-top:12px}
+  .solution-box{padding:12px; border-radius:8px; background:#ecfeff; margin-top:12px}
+  .phase-indicator{font-weight:700; color:var(--accent)}
+  .controls{display:flex; gap:8px; align-items:center; margin-top:12px}
+  .error{color:var(--danger); font-weight:700}
+  .ok{color:var(--success); font-weight:700}
+  footer{margin-top:18px; font-size:0.85rem; color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Calculadora Método Simplex — <span class="small">Dos Fases (mostrar ambas)</span></h1>
+    </header>
+
+    <section class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="row">
+          <div>
+            <label>Tipo</label><br/>
+            <select id="optType"><option value="max">Maximizar</option><option value="min">Minimizar</option></select>
+          </div>
+          <div>
+            <label>Nº Variables</label><br/>
+            <input id="nVars" type="number" min="1" max="8" value="2">
+          </div>
+          <div>
+            <label>Nº Restricciones</label><br/>
+            <input id="nCons" type="number" min="1" max="8" value="3">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" id="btnSetup">Configurar problema</button>
+          <button class="btn secondary" id="btnReset">Reiniciar</button>
+        </div>
+      </div>
+      <div class="small" style="margin-top:10px">Se mostrará Fase I y Fase II paso a paso.</div>
+    </section>
+
+    <section id="setupArea" class="card" style="display:none">
+      <div>
+        <h3 style="margin-top:0;margin-bottom:8px">Función objetivo</h3>
+        <div id="objArea"></div>
+      </div>
+
+      <div style="margin-top:12px">
+        <h3 style="margin-bottom:8px">Restricciones</h3>
+        <div id="consArea"></div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:8px; align-items:center">
+        <button class="btn" id="btnSolve">Resolver (dos fases)</button>
+        <button class="btn secondary" id="btnClearInputs">Limpiar valores</button>
+        <div id="setupMsg" class="small" style="margin-left:12px;color:var(--muted)"></div>
+      </div>
+    </section>
+
+    <section id="solutionArea" class="card" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div>Fase: <span id="phaseLabel" class="phase-indicator">I</span></div>
+          <div id="statusMsg" class="small"></div>
+        </div>
+        <div class="controls">
+          <button class="btn secondary" id="prevStep">← Paso anterior</button>
+          <div id="stepInfo" class="small">Iteración 0/0</div>
+          <button class="btn" id="nextStep">Siguiente paso →</button>
+        </div>
+      </div>
+
+      <div id="tableContainer" class="table-container"></div>
+
+      <div id="extraInfo"></div>
+
+      <div id="finalSolutionBox" class="solution-box" style="display:none"></div>
+    </section>
+
+    <footer>Versión mejorada — Simplex en dos fases. Si quieres, luego optimizo la exportación o el estilo del tableau.</footer>
+  </div>
+
+<script>
+/* -------------------------
+   UTILIDADES MATEMÁTICAS
+   ------------------------- */
+function cloneMatrix(m){ return m.map(r => r.slice()); }
+function almostZero(x, eps=1e-9){ return Math.abs(x) < eps; }
+
+/* -------------------------
+   ESTRUCTURA PARA EL PROBLEMA
+   ------------------------- */
+let state = {
+  numVars:2,
+  numCons:3,
+  optType:'max',
+  varNames:[],         // x1,x2,...
+  tableauPhaseI:[],    // matrices history for fase I
+  tableauPhaseII:[],   // matrices history for fase II
+  pivotsPhaseI:[],
+  pivotsPhaseII:[],
+  basicVarsHistoryI:[],
+  basicVarsHistoryII:[],
+  currentPhase:'I', // 'I' or 'II'
+  stepIndex:0
+};
+
+/* -------------------------
+   CONSTRUCCIÓN DE INTERFAZ
+   ------------------------- */
+document.getElementById('btnSetup').addEventListener('click', setupProblemUI);
+document.getElementById('btnClearInputs').addEventListener('click', clearInputs);
+document.getElementById('btnReset').addEventListener('click', resetAll);
+document.getElementById('btnSolve').addEventListener('click', solveTwoPhase);
+document.getElementById('prevStep').addEventListener('click', prevStep);
+document.getElementById('nextStep').addEventListener('click', nextStep);
+
+function setupProblemUI(){
+  const nV = parseInt(document.getElementById('nVars').value);
+  const nC = parseInt(document.getElementById('nCons').value);
+  if(nV <= 0 || nC <= 0){ alert('Nº de variables y restricciones deben ser > 0'); return; }
+  state.numVars = nV; state.numCons = nC;
+  state.optType = document.getElementById('optType').value;
+
+  // nombres variables
+  state.varNames = [];
+  for(let i=0;i<nV;i++) state.varNames.push('x'+(i+1));
+
+  // Generar inputs (vacíos para que el usuario ingrese)
+  let objHtml = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">';
+  objHtml += '<label class="small">Z = </label>';
+  for(let j=0;j<nV;j++){
+    objHtml += `<input type="number" id="c${j}" placeholder="c${j+1}" value="" step="any"> <span class="small">x${j+1}</span>`;
+  }
+  objHtml += '</div>';
+  document.getElementById('objArea').innerHTML = objHtml;
+
+  let consHtml = '';
+  for(let i=0;i<nC;i++){
+    consHtml += `<div class="restriction-row"> <span class="small">R${i+1}:</span>`;
+    for(let j=0;j<nV;j++){
+      consHtml += `<input type="number" id="a${i}_${j}" placeholder="a${i+1}${j+1}" value="" step="any"> <span class="small">x${j+1}</span>`;
+    }
+    consHtml += `<select id="sign${i}"><option value="<=">&le;</option><option value=">=">&ge;</option><option value="=">=</option></select>`;
+    consHtml += `<input type="number" id="b${i}" placeholder="b${i+1}" value="" step="any">`;
+    consHtml += `</div>`;
+  }
+  document.getElementById('consArea').innerHTML = consHtml;
+
+  document.getElementById('setupArea').style.display = 'block';
+  document.getElementById('solutionArea').style.display = 'none';
+  document.getElementById('setupMsg').textContent = 'Ingrese coeficientes y presione "Resolver".';
+}
+
+function clearInputs(){
+  for(let j=0;j<state.numVars;j++) document.getElementById('c'+j).value = '';
+  for(let i=0;i<state.numCons;i++){
+    for(let j=0;j<state.numVars;j++) document.getElementById(`a${i}_${j}`).value = '';
+    document.getElementById('b'+i).value = '';
+    document.getElementById('sign'+i).value = '<=';
+  }
+}
+
+/* -------------------------
+   CONSTRUCCIÓN DEL TABLEAU INICIAL (Fase I)
+   ------------------------- */
+function buildTableauFull(){
+  const n = state.numVars;
+  const m = state.numCons;
+  const a = []; // filas de restricciones
+  const rhs = [];
+  const signs = [];
+  for(let i=0;i<m;i++){
+    let row = [];
+    for(let j=0;j<n;j++){
+      row.push(parseFloat(document.getElementById(`a${i}_${j}`).value) || 0);
+    }
+    a.push(row);
+    rhs.push(parseFloat(document.getElementById(`b${i}`).value) || 0);
+    signs.push(document.getElementById(`sign${i}`).value);
+  }
+  const c = [];
+  for(let j=0;j<n;j++) c.push(parseFloat(document.getElementById('c'+j).value) || 0);
+
+  // Convertir todo a forma estándar: añadir columnas de slack/surplus/artificial
+  let slackCount = 0, artificialCount = 0;
+  for(let i=0;i<m;i++){
+    if(signs[i] === '<=') slackCount++;
+    if(signs[i] === '>=') { slackCount++; artificialCount++; }
+    if(signs[i] === '=') artificialCount++;
+  }
+  const totalCols = n + slackCount + artificialCount; // sin contar RHS
+  // indices
+  const slackStart = n;
+  const artificialStart = n + slackCount;
+
+  // construir matrix (m filas, totalCols + 1 RHS)
+  let M = [];
+  let artificialIndices = []; // columnas que son artificiales
+  let slackIndex = slackStart;
+  let artIndex = artificialStart;
+  for(let i=0;i<m;i++){
+    let row = new Array(totalCols).fill(0);
+    for(let j=0;j<n;j++) row[j] = a[i][j];
+    const s = signs[i];
+    if(s === '<='){ row[slackIndex++] = 1; }
+    else if(s === '>='){ row[slackIndex++] = -1; row[artIndex] = 1; artificialIndices.push(artIndex); artIndex++; }
+    else if(s === '='){ row[artIndex] = 1; artificialIndices.push(artIndex); artIndex++; }
+    // push RHS at end
+    row.push(rhs[i]);
+    M.push(row);
+  }
+
+  // Construir fila objetivo original (para Fase II)
+  // Convención: en la fila objetivo almacenamos -c para maximizar (última columna Z val en RHS)
+  let objRow = [];
+  for(let j=0;j<totalCols;j++) objRow.push(0);
+  objRow.push(0);
+
+  // Para las variables originales:
+  for(let j=0;j<n;j++){
+    const coef = (state.optType === 'max') ? -c[j] : c[j]; // si minimizar, invertir signo para convertir a maximizar
+    objRow[j] = coef;
+  }
+
+  // Tabla completa: filas restricciones + fila objetivo original (objRow)
+  const fullTable = M.map(r=>r.slice()).concat([objRow]);
+
+  return {
+    tableau: fullTable,
+    totalCols,
+    slackStart,
+    artificialStart,
+    artificialIndices,
+    n, m,
+    originalC: c
+  };
+}
+
+/* -------------------------
+   FASE I: construir fila W y ejecutar simplex
+   Método: Crear fila W = suma de filas que tienen variable artificial,
+   y luego multiplicar por -1 para buscar maximizar (-W). Luego aplicar simplex.
+   ------------------------- */
+function preparePhaseI(full){
+  const T = cloneMatrix(full.tableau);
+  const m = full.m;
+  const totalCols = full.totalCols;
+  const artIdx = full.artificialIndices;
+
+  // Construir fila W inicialmente en 0
+  let wRow = new Array(totalCols + 1).fill(0);
+
+  // Sumar filas que contienen artificial (si una fila tiene variable artificial en columna k, sumamos la fila a W)
+  for(const ai of artIdx){
+    // encontrar filas que tienen 1 en esa columna (debería ser exactamente una)
+    for(let i=0;i<m;i++){
+      if(!almostZero(T[i][ai])){
+        for(let j=0;j<totalCols+1;j++){
+          wRow[j] += T[i][j];
+        }
+      }
+    }
+  }
+
+  // Para usar el mismo algoritmo (buscamos coeficientes negativos en última fila para entrar),
+  // convertimos W a la forma de fila objetivo para *maximizar* (-W). Entonces ponemos wRow = -wRow.
+  for(let j=0;j<totalCols+1;j++) wRow[j] = -wRow[j];
+
+  // Añadir wRow como fila final (Fase I)
+  T[m] = wRow;
+
+  // Determinar variables básicas iniciales (las filas que contienen una columna de base con 1 en columna slack o artificial)
+  // Registraremos nombres para cada columna
+  const colNames = [];
+  // columnas originales x1..xn
+  for(let j=0;j<full.n;j++) colNames.push('x'+(j+1));
+  // slack
+  let slackCount = full.artificialStart - full.slackStart;
+  for(let s=0;s<slackCount;s++) colNames.push('s'+(s+1));
+  // artificial
+  for(let a=0;a<full.artificialIndices.length;a++) colNames.push('a'+(a+1));
+
+  // base: intentar identificar columna base por tener un 1 y ceros en otras filas
+  const baseVars = new Array(m).fill(null);
+  for(let i=0;i<m;i++){
+    for(let j=0;j<totalCols;j++){
+      if(almostZero(Math.abs(T[i][j]-1))){ // potencial base col
+        let cnt = 0;
+        for(let r=0;r<m;r++){
+          if(!almostZero(T[r][j])) cnt++;
+        }
+        if(cnt===1){ baseVars[i] = colNames[j]; break; }
+      }
+    }
+    if(!baseVars[i]) baseVars[i] = 'R'+(i+1); // fallback
+  }
+
+  return {
+    tableau: T,
+    colNames,
+    baseVars
+  };
+}
+
+/* -------------------------
+   ALGORITMO SIMPLEX (iterador genérico)
+   - last row used for pivot selection: pick most negative coefficient (Bland could be used)
+   - ratio test on positive pivot column entries
+   - guarda historiales de tabla y pivotes
+   ------------------------- */
+function simplexRun(initialTableau, colNames, baseVars, maxIter=200){
+  const hist = [];
+  const pivots = [];
+  const basicHistory = [];
+
+  let T = cloneMatrix(initialTableau);
+  const m = T.length - 1;
+  const ncols = T[0].length; // includes RHS
+
+  let iter = 0;
+  hist.push(cloneMatrix(T));
+  pivots.push(null);
+  basicHistory.push(baseVars.slice());
+
+  while(iter < maxIter){
+    // elegir columna pivote (más negativa en última fila)
+    const lastRow = T[m];
+    let pivotCol = -1;
+    let minVal = 0;
+    for(let j=0;j<ncols-1;j++){
+      if(lastRow[j] < minVal - 1e-12){ minVal = lastRow[j]; pivotCol = j; }
+    }
+    if(pivotCol === -1) break; // óptimo alcanzado
+
+    // ratio test: RHS / a_ij for positive a_ij
+    let pivotRow = -1; let minRatio = Infinity;
+    for(let i=0;i<m;i++){
+      const aij = T[i][pivotCol];
+      if(aij > 1e-12){
+        const ratio = T[i][ncols-1] / aij;
+        if(ratio >= -1e-12 && ratio < minRatio - 1e-12){ minRatio = ratio; pivotRow = i; }
+      }
+    }
+    if(pivotRow === -1){
+      // no boundedamente acotado
+      pivots.push({row:-1,col:pivotCol});
+      hist.push(cloneMatrix(T));
+      basicHistory.push(baseVars.slice());
+      return {history:hist, pivots:pivots, basicHistory:basicHistory, unbounded:true};
+    }
+
+    // realizar operación de pivote
+    const newT = cloneMatrix(T);
+    const pv = newT[pivotRow][pivotCol];
+    // dividir fila pivote
+    for(let j=0;j<ncols;j++) newT[pivotRow][j] = newT[pivotRow][j] / pv;
+    // eliminar en otras filas
+    for(let i=0;i<=m;i++){
+      if(i===pivotRow) continue;
+      const factor = newT[i][pivotCol];
+      for(let j=0;j<ncols;j++){
+        newT[i][j] = newT[i][j] - factor * newT[pivotRow][j];
+      }
+    }
+
+    // actualizar base var
+    baseVars[pivotRow] = colNames[pivotCol];
+
+    T = newT;
+    hist.push(cloneMatrix(T));
+    pivots.push({row:pivotRow,col:pivotCol});
+    basicHistory.push(baseVars.slice());
+
+    iter++;
+  }
+
+  return {history:hist, pivots:pivots, basicHistory:basicHistory, unbounded:false, maxIterReached: iter>=maxIter};
+}
+
+/* -------------------------
+   TRANSICIÓN ENTRE FASES
+   ------------------------- */
+function removeArtificialColumns(tableau, colNames){
+  // eliminar columnas cuyo nombre empieza por 'a'
+  const keepCols = [];
+  for(let j=0;j<colNames.length;j++){
+    if(!colNames[j].startsWith('a')) keepCols.push(j);
+  }
+  // construir nueva tabla sin esas columnas
+  const newT = tableau.map(r=>{
+    const nr = [];
+    for(const j of keepCols) nr.push(r[j]);
+    nr.push(r[r.length-1]); // RHS
+    return nr;
+  });
+  const newColNames = keepCols.map(j=>colNames[j]);
+  return {newT, newColNames};
+}
+
+function setupPhaseIIFrom(finalTable, colNames, baseVars, full){
+  // full.originalC contiene los coef originales de las variables x1..xn
+  // colNames puede contener x, s; asegurarse de que los coeficientes originales se alineen
+  const ncols = finalTable[0].length;
+  const totalColsWithoutRHS = ncols - 1;
+  // construir fila objetivo para fase II (usar convención: -c for maximizing)
+  const objRow = new Array(totalColsWithoutRHS + 1).fill(0);
+  for(let j=0;j<totalColsWithoutRHS;j++){
+    const name = colNames[j];
+    if(name && name.startsWith('x')){
+      const idx = parseInt(name.slice(1)) - 1;
+      const coef = full.originalC[idx] || 0;
+      objRow[j] = (state.optType === 'max') ? -coef : coef;
+    } else {
+      objRow[j] = 0;
+    }
+  }
+  objRow[objRow.length-1] = 0;
+
+  // añadir como última fila a la tabla final (que viene de fase I sin artificials)
+  const T = cloneMatrix(finalTable);
+  T[T.length-1] = objRow;
+
+  // ajustar la fila objetivo restando combinaciones de filas básicas para tener en cuenta variables básicas actuales
+  // Para cada fila i (fila de restricción) con variable básica b y coef en objRow j: objRow = objRow - coef_b * row_i
+  for(let i=0;i<T.length-1;i++){
+    const bname = baseVars[i];
+    if(!bname) continue;
+    // si bname es nombre de variable original (x or slack), buscar su columna
+    const colIndex = colNames.indexOf(bname);
+    if(colIndex !== -1){
+      const coefInObj = T[T.length-1][colIndex];
+      if(!almostZero(coefInObj)){
+        for(let j=0;j<T[0].length;j++){
+          T[T.length-1][j] = T[T.length-1][j] - coefInObj * T[i][j];
+        }
+      }
+    }
+  }
+  return {T, colNames, baseVars};
+}
+
+/* -------------------------
+   FUNCIONES DE INTERFAZ PARA EJECUTAR LAS FASES Y MOSTRAR PASOS
+   ------------------------- */
+function solveTwoPhase(){
+  // construir full tableau
+  try{
+    const full = buildTableauFull();
+
+    // preparar fase I
+    const prep = preparePhaseI(full);
+    state.tableauPhaseI = [];
+    state.pivotsPhaseI = [];
+    state.basicVarsHistoryI = [];
+
+    // correr simplex en Fase I
+    const resI = simplexRun(prep.tableau, prep.colNames.slice(), prep.baseVars.slice(), 200);
+
+    state.tableauPhaseI = resI.history;
+    state.pivotsPhaseI = resI.pivots;
+    state.basicVarsHistoryI = resI.basicHistory;
+
+    // obtener última tabla de Fase I
+    const lastI = state.tableauPhaseI[state.tableauPhaseI.length-1];
+    const m = lastI.length - 1;
+    const Wval = lastI[lastI[0].length - 1] * -1; // recordamos que en preparación invertimos W; sin embargo lo que importa es si W==0 factible o no
+    // mejor: sumar las columnas artificiales en la solución final (pero si preparamos bien, RHS final en la fila W es -W, así que W = -RHS)
+    // recuperar RHS de fila W: lastI[m][lastI[0].length-1] = -W => W = -lastRHS
+    const lastRHS_W_neg = lastI[m][lastI[0].length - 1];
+    const W_final = - lastRHS_W_neg;
+
+    // Evaluar factibilidad
+    let infeasible = false;
+    if(!almostZero(W_final)) infeasible = true;
+
+    // preparar fase II si factible
+    if(infeasible){
+      // mostrar resultados: problema sin solución factible
+      document.getElementById('solutionArea').style.display = 'block';
+      document.getElementById('phaseLabel').textContent = 'I (terminada)';
+      document.getElementById('statusMsg').innerHTML = '<span class="error">Problema INFACTIBLE: W ≠ 0 al finalizar Fase I (W = '+W_final.toFixed(6)+')</span>';
+      // mostrar última tabla de fase I
+      state.currentPhase = 'I';
+      state.stepIndex = state.tableauPhaseI.length - 1;
+      renderCurrentStep();
+      return;
+    }
+
+    // si factible: eliminar columnas artificiales y construir tabla para fase II
+    const { newT, newColNames } = removeArtificialColumns(state.tableauPhaseI[state.tableauPhaseI.length-1], prep.colNames);
+
+    // Detectar nueva base: si alguna variable básica era artificial, reemplazar por variable de la fila (si no existe, marcar)
+    // Reconstruir nombre baseVars acorde a newColNames
+    let newBaseVars = [];
+    const oldBase = state.basicVarsHistoryI[state.basicVarsHistoryI.length-1];
+    for(let i=0;i<oldBase.length;i++){
+      const b = oldBase[i];
+      if(b && b.startsWith('a')){
+        // intentar identificar una variable de columna con 1 en esa fila
+        let found = null;
+        for(let j=0;j<newColNames.length;j++){
+          if(almostZero(newT[i][j]-1)){
+            // verificar que el resto de filas en esa columna sean 0
+            let cnt=0;
+            for(let r=0;r<newT.length-1;r++){
+              if(Math.abs(newT[r][j]) > 1e-9) cnt++;
+            }
+            if(cnt===1){ found = newColNames[j]; break;}
+          }
+        }
+        newBaseVars.push(found || 'R'+(i+1));
+      } else {
+        // si no era artificial, pero la columna pudo haber cambiado de índice:
+        if(newColNames.indexOf(b) !== -1) newBaseVars.push(b);
+        else newBaseVars.push(b);
+      }
+    }
+
+    // preparar Phase II tableau (reemplaza última fila por la función objetivo original ajustada)
+    const phaseIIsetup = setupPhaseIIFrom(newT, newColNames, newBaseVars, full);
+    // ejecutar simplex para fase II
+    const resII = simplexRun(phaseIIsetup.T, phaseIIsetup.colNames.slice(), phaseIIsetup.baseVars.slice(), 200);
+
+    state.tableauPhaseII = resII.history;
+    state.pivotsPhaseII = resII.pivots;
+    state.basicVarsHistoryII = resII.basicHistory;
+
+    // mostrar inicio en fase I (permitir navegar)
+    state.currentPhase = 'I';
+    state.stepIndex = 0;
+    document.getElementById('solutionArea').style.display = 'block';
+    document.getElementById('phaseLabel').textContent = 'I';
+    document.getElementById('statusMsg').textContent = 'Fase I completada y problema factible. Luego Fase II ejecutada.';
+    renderCurrentStep();
+
+    // si fase II terminó con un resultado óptimo, mostrar solución final al final de la navegación
+    // cuando el usuario navegue hasta el final de fase II mostramos la solución.
+  } catch(e){
+    alert('Error: ' + e.message);
+    console.error(e);
+  }
+}
+
+/* -------------------------
+   RENDERIZACIÓN DE TABLA Y ESTADO
+   ------------------------- */
+function renderCurrentStep(){
+  const phase = state.currentPhase;
+  if(phase === 'I'){
+    const hist = state.tableauPhaseI;
+    const piv = state.pivotsPhaseI;
+    const baseHist = state.basicVarsHistoryI;
+    const idx = Math.min(Math.max(0, state.stepIndex), hist.length - 1);
+    const T = hist[idx];
+    const pivot = piv[idx];
+    const base = baseHist[idx] || [];
+    renderTableAndInfo(T, pivot, base, 'I', idx, hist.length);
+  } else {
+    const hist = state.tableauPhaseII;
+    const piv = state.pivotsPhaseII;
+    const baseHist = state.basicVarsHistoryII;
+    const idx = Math.min(Math.max(0, state.stepIndex), hist.length - 1);
+    const T = hist[idx];
+    const pivot = piv[idx];
+    const base = baseHist[idx] || [];
+    renderTableAndInfo(T, pivot, base, 'II', idx, hist.length);
+  }
+}
+
+function renderTableAndInfo(T, pivot, base, phase, idx, total){
+  const container = document.getElementById('tableContainer');
+  container.innerHTML = '';
+
+  // headers: names dinámicos según la estructura calculada
+  // detectar número columnas
+  const cols = T[0].length;
+  // intentar reconstruir nombres: para fase I usamos stored colNames; para fase II igual
+  const colNames = (phase==='I') ? (state.tableauPhaseI_colNames || inferColNamesFromTable(T)) : (state.tableauPhaseII_colNames || inferColNamesFromTable(T));
+  // BUT we didn't store colNames globally for phase outputs; fallback to generic names
+  // For clarity: build header x1..xn, s1.., a1.. if possible by detecting patterns
+  let headerHtml = '<table><thead><tr><th>Var Básica</th>';
+  // crear nombres por índice
+  for(let j=0;j<cols-1;j++){
+    headerHtml += `<th>c${j+1}</th>`;
+  }
+  headerHtml += '<th>RHS</th></tr></thead><tbody>';
+
+  // filas
+  for(let i=0;i<T.length;i++){
+    const isLast = i === T.length - 1;
+    const isPivotRow = pivot && pivot.row === i;
+    headerHtml += `<tr class="${isPivotRow ? 'pivot-row' : ''}">`;
+    headerHtml += `<th style="text-align:left">${ isLast ? (phase==='I' ? 'W' : 'Z') : (base[i] || ('r'+(i+1))) }</th>`;
+    for(let j=0;j<cols;j++){
+      const isPivotCell = pivot && pivot.row === i && pivot.col === j;
+      const display = T[i][j];
+      headerHtml += `<td class="${isPivotCell ? 'pivot-cell' : ''}">${Number(display).toFixed(6)}</td>`;
+    }
+    headerHtml += `</tr>`;
+  }
+  headerHtml += '</tbody></table>';
+  container.innerHTML = headerHtml;
+
+  // info extra (pivot)
+  const extra = document.getElementById('extraInfo');
+  extra.innerHTML = '';
+  let infoHtml = '';
+  infoHtml += `<div class="info"><strong>Fase:</strong> ${phase} — Iteración ${idx+1} de ${total}`;
+  if(pivot){
+    if(pivot.row === -1){
+      infoHtml += `<div class="error">Problema no acotado (columna ${pivot.col+1} sin fila pivote positiva)</div>`;
+    } else {
+      infoHtml += `<div style="margin-top:8px"><strong>Pivote</strong> → fila ${pivot.row+1}, columna ${pivot.col+1}</div>`;
+    }
+  } else {
+    infoHtml += `<div style="margin-top:8px"><em>Tabla inicial / óptimo alcanzado</em></div>`;
+  }
+  infoHtml += `</div>`;
+  extra.innerHTML = infoHtml;
+
+  document.getElementById('phaseLabel').textContent = phase;
+  document.getElementById('stepInfo').textContent = `Iteración ${idx+1}/${total}`;
+  // mostrar solución final si estamos en final de fase II
+  if(phase==='II' && idx === total - 1){
+    displaySolutionFinal(T);
+  } else {
+    document.getElementById('finalSolutionBox').style.display = 'none';
+  }
+}
+
+function inferColNamesFromTable(T){
+  // heurística ligera: si hay m restricciones y ncols, asignar x1.., s1.. etc.
+  const m = T.length - 1;
+  const ncols = T[0].length -1;
+  const names = [];
+  // suponer primeras state.numVars son x
+  for(let j=0;j<ncols;j++){
+    if(j < state.numVars) names.push('x'+(j+1));
+    else names.push('v'+(j+state.numVars+1));
+  }
+  return names;
+}
+
+/* -------------------------
+   NAVEGACIÓN PASO A PASO
+   ------------------------- */
+function prevStep(){
+  if(state.currentPhase === 'I'){
+    if(state.stepIndex > 0){ state.stepIndex--; renderCurrentStep(); }
+    else { // si estamos en paso 0 de fase I, nada
+      // nada
+    }
+  } else {
+    if(state.stepIndex > 0){ state.stepIndex--; renderCurrentStep(); }
+    else { // si en inicio de fase II y vamos atrás, volver a fase I final
+      if(state.tableauPhaseI && state.tableauPhaseI.length>0){
+        state.currentPhase = 'I';
+        state.stepIndex = state.tableauPhaseI.length-1;
+        renderCurrentStep();
+      }
+    }
+  }
+}
+
+function nextStep(){
+  if(state.currentPhase === 'I'){
+    if(state.stepIndex < state.tableauPhaseI.length - 1){ state.stepIndex++; renderCurrentStep(); }
+    else {
+      // pasar a fase II inicio
+      if(state.tableauPhaseII && state.tableauPhaseII.length>0){
+        state.currentPhase = 'II';
+        state.stepIndex = 0;
+        renderCurrentStep();
+      }
+    }
+  } else {
+    if(state.stepIndex < state.tableauPhaseII.length - 1){ state.stepIndex++; renderCurrentStep(); }
+    // si es final, se queda
+  }
+}
+
+/* -------------------------
+   EXTRACCIÓN Y MUESTRA SOLUCIÓN FINAL
+   ------------------------- */
+function displaySolutionFinal(T){
+  // Suponemos que T es tabla final fase II. Encontrar variables basicas y sus RHS
+  const ncols = T[0].length;
+  const m = T.length - 1;
+  // heurística: las variables básicas son las columnas que forman vectores unitarios en filas de restricciones.
+  const solution = {};
+  for(let j=0;j<ncols-1;j++){
+    // buscar si columna j es vector canónico en las m filas
+    let oneIndex = -1, nonzeroCount = 0;
+    for(let i=0;i<m;i++){
+      if(Math.abs(T[i][j]) > 1e-9){
+        if(Math.abs(T[i][j] - 1) < 1e-9) oneIndex = i;
+        nonzeroCount++;
+      }
+    }
+    if(nonzeroCount === 1 && oneIndex !== -1){
+      solution['c'+(j+1)] = T[oneIndex][ncols-1];
+    } else {
+      solution['c'+(j+1)] = 0;
+    }
+  }
+  const zVal = (state.optType === 'max') ? -T[m][ncols-1] : T[m][ncols-1];
+
+  // Mostrar en caja final
+  let html = `<div><strong>Solución Óptima</strong></div>`;
+  html += `<div style="margin-top:6px">Z = ${zVal.toFixed(6)}</div>`;
+  html += `<div style="margin-top:6px"><strong>Variables</strong></div><ul style="margin-top:6px">`;
+  for(const k of Object.keys(solution)){
+    html += `<li>${k} = ${Number(solution[k]).toFixed(6)}</li>`;
+  }
+  html += `</ul>`;
+  const box = document.getElementById('finalSolutionBox');
+  box.innerHTML = html;
+  box.style.display = 'block';
+}
+
+/* -------------------------
+   RESETEAR TODO
+   ------------------------- */
+function resetAll(){
+  document.getElementById('setupArea').style.display = 'none';
+  document.getElementById('solutionArea').style.display = 'none';
+  document.getElementById('objArea').innerHTML = '';
+  document.getElementById('consArea').innerHTML = '';
+  state = {
+    numVars:2,
+    numCons:3,
+    optType:'max',
+    varNames:[],
+    tableauPhaseI:[],
+    tableauPhaseII:[],
+    pivotsPhaseI:[],
+    pivotsPhaseII:[],
+    basicVarsHistoryI:[],
+    basicVarsHistoryII:[],
+    currentPhase:'I',
+    stepIndex:0
+  };
+  document.getElementById('nVars').value = 2;
+  document.getElementById('nCons').value = 3;
+  document.getElementById('optType').value = 'max';
+  document.getElementById('setupMsg').textContent = '';
+}
+
+/* -------------------------
+   Inicializar (auto setup)
+   ------------------------- */
+window.onload = function(){
+  setupProblemUI();
+};
+
+</script>
+</body>
+</html>
