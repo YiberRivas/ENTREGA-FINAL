@@ -16,7 +16,6 @@ export default function Login() {
   const [alert, setAlert] = useState({ show: false, message: "", type: "" });
   const navigate = useNavigate();
 
-  // Cambios en inputs
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -24,7 +23,6 @@ export default function Login() {
     });
   };
 
-  // Alertas
   const showAlert = (message, type) => {
     setAlert({ show: true, message, type });
     setTimeout(() => {
@@ -32,7 +30,6 @@ export default function Login() {
     }, 4000);
   };
 
-  // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     const { usuario, contrasena } = formData;
@@ -45,12 +42,17 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await api.post("/autenticacion/login", {
-        usuario: usuario,
-        contrasena: contrasena
+      // ✅ ENVIAR COMO FORMDATA (OAuth2 estándar)
+      const formDataToSend = new URLSearchParams();
+      formDataToSend.append("username", usuario);
+      formDataToSend.append("password", contrasena);
+
+      const response = await api.post("/autenticacion/login", formDataToSend, {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
       });
 
-      // Validación segura de datos
       if (!response?.data) {
         throw new Error("Respuesta inválida del servidor");
       }
@@ -61,9 +63,13 @@ export default function Login() {
         throw new Error("El servidor no envió datos completos");
       }
 
-      // Guardar en localStorage
+      // ✅ Guardar en localStorage
       localStorage.setItem("token", access_token);
       localStorage.setItem("usuario", JSON.stringify(userData));
+
+      console.log("✅ Login exitoso");
+      console.log("✅ Token guardado:", access_token.substring(0, 20) + "...");
+      console.log("✅ Usuario:", userData);
 
       Swal.fire({
         icon: "success",
@@ -73,10 +79,8 @@ export default function Login() {
         timer: 1800,
         timerProgressBar: true,
       }).then(() => {
-        // Rol normalizado
         const rol = (userData.rol || "").toLowerCase().trim();
 
-        // Redirecciones
         if (rol === "administrador" || rol.includes("admin")) {
           navigate("/admin/inicio");
         } else if (rol === "cliente" || rol.includes("cliente")) {
@@ -87,7 +91,7 @@ export default function Login() {
       });
 
     } catch (err) {
-      console.error("Error de login:", err);
+      console.error("❌ Error de login:", err);
 
       let errorMessage = "Ocurrió un error inesperado al iniciar sesión.";
 
@@ -112,8 +116,6 @@ export default function Login() {
   return (
     <div className="login-page">
       <div className="login-container">
-
-        {/* Fondos animados */}
         <div className="login-background">
           <div className="floating-shape shape-1"></div>
           <div className="floating-shape shape-2"></div>
@@ -155,6 +157,7 @@ export default function Login() {
                       onChange={handleChange}
                       placeholder="Ingresa tu usuario"
                       className="form-control"
+                      autoComplete="username"
                       required
                     />
                   </div>
@@ -168,6 +171,7 @@ export default function Login() {
                       onChange={handleChange}
                       placeholder="Ingresa tu contraseña"
                       className="form-control"
+                      autoComplete="current-password"
                       required
                     />
                   </div>
@@ -185,12 +189,10 @@ export default function Login() {
                     </Link>
                   </p>
                 </div>
-
               </div>
             </Col>
           </Row>
         </Container>
-
       </div>
     </div>
   );

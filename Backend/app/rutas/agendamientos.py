@@ -17,6 +17,7 @@ from app.modelos.modelos import (
     EstadoFactura,
 )
 
+# ✅ UN SOLO ROUTER
 router = APIRouter(tags=["Agendamientos"])
 
 # ---------------- SCHEMAS ----------------
@@ -45,22 +46,51 @@ class FinalizarRequest(BaseModel):
     agendamiento_id: int
     observaciones: Optional[str] = None
     calificacion: Optional[int] = None
-    forma_pago_id: Optional[int] = None  # opcional
+    forma_pago_id: Optional[int] = None
 
-# ---------------- ENDPOINTS ----------------
+# ---------------- ENDPOINTS ADMIN ----------------
+@router.get("/agendamientos_recientes")
+def agendamientos_recientes(limite: int = 50, db: Session = Depends(get_db)):
+    """
+    Devuelve los agendamientos más recientes,
+    listos para ser usados en el dashboard administrador.
+    """
+    try:
+        ags = (
+            db.query(Agendamiento)
+            .order_by(Agendamiento.creado_en.desc())
+            .limit(limite)
+            .all()
+        )
+
+        resultado = []
+        for a in ags:
+            resultado.append({
+                "id": a.id_agendamiento,
+                "cliente": f"{a.persona.nombres} {a.persona.apellidos}",
+                "servicio": a.servicio.nombre_servicio,
+                "fecha": f"{a.fecha} {a.hora}",
+                "estado": a.estado.value,
+            })
+
+        return resultado
+
+    except Exception as e:
+        print("ERROR:", e)
+        raise HTTPException(status_code=500, detail="Error al obtener agendamientos recientes")
+
+# ---------------- ENDPOINTS GENERALES ----------------
 @router.get("/", response_model=List[AgendamientoResponse])
 def listar_agendamientos(estado: Optional[str] = None, db: Session = Depends(get_db)):
     """
-    Listar agendamientos. Si se pasa `estado` filtra por ese estado (tolerante con Enum/texto).
+    Listar agendamientos. Si se pasa `estado` filtra por ese estado.
     """
     query = db.query(Agendamiento)
     if estado:
-        # Intentamos comparar con Enum primero
         try:
             enum_estado = getattr(EstadoAgendamiento, estado)
             query = query.filter(Agendamiento.estado == enum_estado)
         except Exception:
-            # fallback comparando por texto
             query = query.filter(Agendamiento.estado == estado)
 
     agendamientos = query.all()
@@ -138,11 +168,10 @@ def crear_agendamiento(ag: AgendamientoCreate, db: Session = Depends(get_db)):
 @router.post("/iniciar/{id_agendamiento}")
 def iniciar_agendamiento(id_agendamiento: int, db: Session = Depends(get_db)):
     """
-    Marca inicio del servicio: guarda hora_inicio (si existe ese campo) y cambia estado a en_proceso.
+    Marca inicio del servicio.
     """
     ag = db.query(Agendamiento).filter(Agendamiento.id_agendamiento == id_agendamiento).first()
     if not ag:
-        # intentar por id si tu modelo usa 'id'
         ag = db.query(Agendamiento).filter(getattr(Agendamiento, "id", -1) == id_agendamiento).first()
     if not ag:
         raise HTTPException(status_code=404, detail="Agendamiento no encontrado")
@@ -167,10 +196,7 @@ def iniciar_agendamiento(id_agendamiento: int, db: Session = Depends(get_db)):
 @router.post("/finalizar")
 def finalizar_servicio(data: FinalizarRequest, db: Session = Depends(get_db)):
     """
-    Finaliza el servicio:
-     - valida que haya hora_inicio
-     - calcula duración y aplica reglas comerciales
-     - guarda FinalizacionServicio y crea Factura (estado: emitida)
+    Finaliza el servicio y genera factura.
     """
     ag = db.query(Agendamiento).filter(Agendamiento.id_agendamiento == data.agendamiento_id).first()
     if not ag:
@@ -179,14 +205,13 @@ def finalizar_servicio(data: FinalizarRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Agendamiento no encontrado")
 
     if not hasattr(ag, "hora_inicio") or not ag.hora_inicio:
-        raise HTTPException(status_code=400, detail="El servicio no ha sido iniciado por el administrador")
+        raise HTTPException(status_code=400, detail="El servicio no ha sido iniciado")
 
     hora_fin = datetime.now()
     total_segundos = (hora_fin - ag.hora_inicio).total_seconds()
     minutos = int(total_segundos // 60)
     horas_reales = round(minutos / 60, 2)
 
-    # Reglas comerciales
     horas_minimas = 3
     tarifa_hora = Decimal("3000")
 
@@ -216,7 +241,6 @@ def finalizar_servicio(data: FinalizarRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(factura)
 
-    # Retornamos factura con estructura sencilla (el frontend espera 'factura')
     return {
         "message": "Servicio finalizado correctamente",
         "duracion_real_horas": float(horas_reales),
@@ -229,7 +253,6 @@ def finalizar_servicio(data: FinalizarRequest, db: Session = Depends(get_db)):
             "estado": factura.estado.value if hasattr(factura.estado, "value") else str(factura.estado),
             "forma_pago_id": factura.forma_pago_id
         },
-        # opcional: devolvemos cliente y servicio si existen para que frontend muestre inmediatamente
         "cliente": {
             "nombres": ag.persona.nombres if ag.persona else None,
             "apellidos": ag.persona.apellidos if ag.persona else None,
@@ -294,7 +317,6 @@ def actualizar_estado(id_agendamiento: int, nuevo_estado: str, db: Session = Dep
         ag = db.query(Agendamiento).filter(getattr(Agendamiento, "id", -1) == id_agendamiento).first()
     if not ag:
         raise HTTPException(status_code=404, detail="Agendamiento no encontrado")
-    # intentar convertir a Enum
     try:
         estado_enum = getattr(EstadoAgendamiento, nuevo_estado)
         ag.estado = estado_enum

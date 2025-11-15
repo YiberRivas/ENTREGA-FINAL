@@ -2,49 +2,84 @@ import React, { useEffect, useState } from "react";
 import { Container, Spinner } from "react-bootstrap";
 import Swal from "sweetalert2";
 import api from "../../api/axiosConfig";
-import AgendamientosTable from "../../componentes/admin/AgendamientosTable"; // ajusta la ruta si es necesario
+import AgendamientosTable from "../../componentes/admin/AgendamientosTable";
 
 const AgendamientosPage = () => {
   const [agendamientos, setAgendamientos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔹 Cargar los agendamientos al iniciar
-  useEffect(() => {
-    const fetchAgendamientos = async () => {
-      try {
-        const res = await api.get("/agendamientos/");
-        console.log("✅ Agendamientos cargados:", res.data);
-        setAgendamientos(res.data);
-      } catch (error) {
-        console.error("❌ Error al obtener agendamientos:", error);
-        Swal.fire({
-          icon: "error",
-          title: "Error al cargar datos",
-          text:
-            error.response?.data?.detail ||
-            "No se pudieron obtener los agendamientos",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  // ============================
+  // 🔹 Cargar los agendamientos
+  // ============================
+  const fetchAgendamientos = async () => {
+    try {
+      const res = await api.get("/agendamientos/");
+      console.log("✅ Agendamientos cargados:", res.data);
+      setAgendamientos(res.data);
+    } catch (error) {
+      console.error("❌ Error al obtener agendamientos:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error al cargar datos",
+        text:
+          error.response?.data?.detail ||
+          "No se pudieron obtener los agendamientos",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchAgendamientos();
   }, []);
 
-  // 🔹 Acciones de la tabla
+  // ============================
+  // 🔹 Ver detalles
+  // ============================
   const handleView = (row) => {
-    Swal.fire("Detalles del Agendamiento", JSON.stringify(row, null, 2), "info");
+    Swal.fire("Detalles", JSON.stringify(row, null, 2), "info");
   };
 
-  const handleEdit = (row) => {
-    Swal.fire("Editar", `Editar agendamiento #${row.id}`, "warning");
+  // ============================
+  // 🔹 Editar estado
+  // ============================
+  const handleEdit = async (row) => {
+    const { value: estado } = await Swal.fire({
+      title: `Actualizar estado (#${row.id_agendamiento})`,
+      input: "select",
+      inputOptions: {
+        pendiente: "Pendiente",
+        en_progreso: "En progreso",
+        finalizado: "Finalizado",
+        cancelado: "Cancelado",
+      },
+      inputPlaceholder: "Seleccione un estado",
+      showCancelButton: true,
+    });
+
+    if (!estado) return;
+
+    try {
+      await api.put(`/agendamientos/${row.id_agendamiento}/estado`, {
+        estado,
+      });
+
+      Swal.fire("Actualizado", "El estado fue actualizado.", "success");
+      fetchAgendamientos();
+    } catch (error) {
+      console.error("Error al actualizar estado:", error);
+      Swal.fire("Error", "No se pudo actualizar el estado.", "error");
+    }
   };
 
+  // ============================
+  // 🔹 Eliminar agendamiento
+  // ============================
   const handleDelete = async (row) => {
     const confirm = await Swal.fire({
       title: "¿Eliminar agendamiento?",
-      text: `Se eliminará el agendamiento #${row.id}`,
+      text: `Se eliminará el agendamiento #${row.id_agendamiento}`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#dc3545",
@@ -53,20 +88,50 @@ const AgendamientosPage = () => {
       cancelButtonText: "Cancelar",
     });
 
-    if (confirm.isConfirmed) {
-      try {
-        await api.delete(`/agendamientos/${row.id}`);
-        setAgendamientos((prev) =>
-          prev.filter((a) => a.id !== row.id)
-        );
-        Swal.fire("Eliminado", "El agendamiento fue eliminado.", "success");
-      } catch (error) {
-        console.error("Error al eliminar:", error);
-        Swal.fire("Error", "No se pudo eliminar el agendamiento.", "error");
-      }
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await api.delete(`/agendamientos/${row.id_agendamiento}`);
+      Swal.fire("Eliminado", "El agendamiento fue eliminado.", "success");
+      fetchAgendamientos();
+    } catch (error) {
+      console.error("Error al eliminar:", error);
+      Swal.fire("Error", "No se pudo eliminar el agendamiento.", "error");
     }
   };
 
+  // ============================
+  // 🔹 Botón Iniciar Servicio
+  // ============================
+  const handleStart = async (row) => {
+    try {
+      await api.post(`/agendamientos/iniciar/${row.id_agendamiento}`);
+      Swal.fire("Iniciado", "El servicio fue iniciado.", "success");
+      fetchAgendamientos();
+    } catch (error) {
+      Swal.fire("Error", "No se pudo iniciar el agendamiento.", "error");
+    }
+  };
+
+  // ============================
+  // 🔹 Botón Finalizar Servicio
+  // ============================
+  const handleFinish = async (row) => {
+    try {
+      await api.post(`/agendamientos/finalizar`, {
+        id_agendamiento: row.id_agendamiento,
+      });
+
+      Swal.fire("Finalizado", "El servicio ha finalizado.", "success");
+      fetchAgendamientos();
+    } catch (error) {
+      Swal.fire("Error", "No se pudo finalizar el servicio.", "error");
+    }
+  };
+
+  // ============================
+  // Render
+  // ============================
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
@@ -85,7 +150,7 @@ const AgendamientosPage = () => {
 
       <AgendamientosTable
         data={agendamientos.map((a) => ({
-          id: a.id_agendamiento,
+          id_agendamiento: a.id_agendamiento,
           cliente: `${a.persona?.nombres || ""} ${a.persona?.apellidos || ""}`,
           servicio: a.servicio?.nombre_servicio || "Desconocido",
           fecha: a.fecha,
@@ -94,6 +159,8 @@ const AgendamientosPage = () => {
         onView={handleView}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onStart={handleStart}
+        onFinish={handleFinish}
       />
     </Container>
   );

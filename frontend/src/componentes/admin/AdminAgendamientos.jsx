@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Container, Spinner, Button, Table } from "react-bootstrap";
 import Swal from "sweetalert2";
 import api from "../../api/axiosConfig";
+import AgendamientosTable from "../../components/admin/AgendamientosTable"; 
+import ModalFinalizar from "../../components/admin/ModalFinalizar";
+
+import { Spinner } from "react-bootstrap";
 
 export default function AdminAgendamientos() {
   const [agendamientos, setAgendamientos] = useState([]);
@@ -15,7 +18,17 @@ export default function AdminAgendamientos() {
     setLoading(true);
     try {
       const res = await api.get("/admin/agendamientos_recientes?limite=100");
-      setAgendamientos(res.data || []);
+
+      // ADAPTAR DATOS A TU TABLA
+      const adaptados = (res.data || []).map((a) => ({
+        id_agendamiento: a.id,
+        cliente: a.cliente,
+        servicio: a.servicio,
+        fecha: a.fecha,
+        estado: a.estado,
+      }));
+
+      setAgendamientos(adaptados);
     } catch (error) {
       console.error(error);
       Swal.fire("Error", "No se pudieron cargar los agendamientos", "error");
@@ -24,19 +37,67 @@ export default function AdminAgendamientos() {
     }
   };
 
-  const handleIniciar = async (id) => {
+  // 🔹 Ver
+  const handleView = (row) => {
+    Swal.fire({
+      title: "Detalles del Agendamiento",
+      html: `
+        <p><b>ID:</b> ${row.id_agendamiento}</p>
+        <p><b>Cliente:</b> ${row.cliente}</p>
+        <p><b>Servicio:</b> ${row.servicio}</p>
+        <p><b>Fecha:</b> ${row.fecha}</p>
+        <p><b>Estado:</b> ${row.estado}</p>
+      `,
+      confirmButtonText: "Cerrar",
+    });
+  };
+
+  // 🔹 Editar (opcional)
+  const handleEdit = (row) => {
+    Swal.fire("Editar", "Función de edición pendiente", "info");
+  };
+
+  // 🔹 Eliminar
+  const handleDelete = (row) => {
+    Swal.fire({
+      title: "¿Eliminar agendamiento?",
+      text: "Esta acción no se puede deshacer",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc3545",
+      cancelButtonText: "Cancelar",
+      confirmButtonText: "Eliminar",
+    }).then(async (r) => {
+      if (r.isConfirmed) {
+        try {
+          await api.delete(`/agendamientos/${row.id_agendamiento}`);
+          Swal.fire("Eliminado", "Agendamiento eliminado", "success");
+          cargarAgendamientos();
+        } catch (error) {
+          Swal.fire(
+            "Error",
+            error.response?.data?.detail || "No se pudo eliminar",
+            "error"
+          );
+        }
+      }
+    });
+  };
+
+  // 🔹 Iniciar
+  const handleStart = async (row) => {
     try {
-      const res = await api.post(`/agendamientos/iniciar/${id}`);
+      const res = await api.post(`/agendamientos/iniciar/${row.id_agendamiento}`);
       Swal.fire("Iniciado", res.data.message, "success");
       cargarAgendamientos();
-    } catch (error) {
-      console.error(error);
-      Swal.fire("Error", error.response?.data?.detail || "No se pudo iniciar", "error");
+    } catch (err) {
+      Swal.fire("Error", err.response?.data?.detail || "No se pudo iniciar", "error");
     }
   };
 
-  const handleFinalizar = async (id) => {
-    const { value: confirm } = await Swal.fire({
+  // 🔹 Finalizar
+  const handleFinish = async (row) => {
+    const { value } = await Swal.fire({
       title: "Finalizar servicio",
       text: "¿Deseas finalizar y generar factura?",
       input: "select",
@@ -47,23 +108,22 @@ export default function AdminAgendamientos() {
       showCancelButton: true,
       confirmButtonText: "Aceptar",
     });
-    if (confirm === undefined) return;
+
+    if (value === undefined) return;
 
     try {
-      // Si confirm === "1" -> pasar forma_pago_id = 1 (Efectivo) como ejemplo
-      const body = {};
-      if (confirm === "1") body.forma_pago_id = 1;
-      const res = await api.post("/agendamientos/finalizar", {
-        agendamiento_id: id,
-        observaciones: "",
-        calificacion: null,
-        ...body
-      });
-      Swal.fire("Finalizado", "Factura generada: " + JSON.stringify(res.data.factura), "success");
+      const body = { agendamiento_id: row.id_agendamiento };
+      if (value === "1") body.forma_pago_id = 1;
+
+      const res = await api.post("/agendamientos/finalizar", body);
+      Swal.fire("Finalizado", "Factura generada correctamente", "success");
       cargarAgendamientos();
-    } catch (error) {
-      console.error(error);
-      Swal.fire("Error", error.response?.data?.detail || "No se pudo finalizar", "error");
+    } catch (err) {
+      Swal.fire(
+        "Error",
+        err.response?.data?.detail || "No se pudo finalizar",
+        "error"
+      );
     }
   };
 
@@ -76,47 +136,17 @@ export default function AdminAgendamientos() {
   }
 
   return (
-    <Container fluid>
+    <div>
       <h3 className="mb-3">Agendamientos</h3>
-      <Table hover responsive>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Cliente</th>
-            <th>Servicio</th>
-            <th>Fecha</th>
-            <th>Estado</th>
-            <th>Inicio real</th>
-            <th>Fin real</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {agendamientos.map((a) => (
-            <tr key={a.id}>
-              <td>#{a.id}</td>
-              <td>{a.cliente}</td>
-              <td>{a.servicio}</td>
-              <td>{a.fecha}</td>
-              <td>{a.estado}</td>
-              <td>{a.hora_inicio ? a.hora_inicio : "-"}</td>
-              <td>{a.hora_fin ? a.hora_fin : "-"}</td>
-              <td>
-                {a.estado !== "en_proceso" && (
-                  <Button size="sm" variant="success" onClick={() => handleIniciar(a.id)} className="me-2">
-                    Iniciar
-                  </Button>
-                )}
-                {a.estado !== "finalizado" && (
-                  <Button size="sm" variant="danger" onClick={() => handleFinalizar(a.id)}>
-                    Finalizar
-                  </Button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    </Container>
+
+      <AgendamientosTable
+        data={agendamientos}
+        onView={handleView}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onStart={handleStart}
+        onFinish={handleFinish}
+      />
+    </div>
   );
 }

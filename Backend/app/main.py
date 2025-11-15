@@ -18,11 +18,7 @@ app = FastAPI(
     description="API completa para gestión de servicios de lavandería"
 )
 
-# ==========================
-# 🌍 CONFIGURACIÓN CORS (OPTIMIZADA)
-# ==========================
-
-# Acepta cualquier puerto local: 5173, 5174, 5175, etc.
+# Configuración CORS
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -40,11 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# ==========================
-# 🚀 CARGA DE RUTAS
-# ==========================
-
+# Carga de rutas
 routers_map = {
     "autenticacion": autenticacion.router,
     "usuarios": usuarios.router,
@@ -80,9 +72,6 @@ for name, router in routers_map.items():
     app.include_router(router, prefix=prefix)
     print(f"✅ Router '{name}' cargado en: {prefix}")
 
-# ==========================
-# 🏠 ENDPOINT PRINCIPAL
-# ==========================
 @app.get("/")
 def root():
     return {
@@ -96,9 +85,6 @@ def root():
 def health_check():
     return {"status": "healthy"}
 
-# ==========================
-# 👑 CREAR ROLES BASE AUTOMÁTICOS
-# ==========================
 def crear_roles_base():
     db: Session = SessionLocal()
     try:
@@ -114,5 +100,7 @@ def crear_roles_base():
     finally:
         db.close()
 
-# Crear roles al iniciar
 crear_roles_base()
+
+
+# estoy editanto este archivo
