@@ -1,14 +1,18 @@
 import axios from "axios";
 
+const BASE_URL = import.meta.env.VITE_API_URL;
+
+console.log("🌐 API URL =", BASE_URL); // 👈 te dice si está cargando bien
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL?.trim() || "http://127.0.0.1:8000", // ⚡ ruta base por defecto
+  baseURL: BASE_URL || "http://127.0.0.1:8000",
   timeout: 10000,
   headers: {
-    "Content-Type": "application/json", // 👈 importante para evitar errores CORS
+    "Content-Type": "application/json",
   },
 });
 
-// 🔒 Interceptor para token de autenticación
+// Token (si existe)
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");

@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Container, Spinner } from "react-bootstrap";
+import { Container, Spinner, Button, Table } from "react-bootstrap";
 import Swal from "sweetalert2";
 import api from "../../api/axiosConfig";
-import AgendamientosTable from "../../componentes/admin/AgendamientosTable"; // Asegúrate de que esta ruta sea correcta
 
-const AdminAgendamientos = () => {
+export default function AdminAgendamientos() {
   const [agendamientos, setAgendamientos] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -13,77 +12,111 @@ const AdminAgendamientos = () => {
   }, []);
 
   const cargarAgendamientos = async () => {
+    setLoading(true);
     try {
-      const res = await api.get("/admin/agendamientos_recientes?limite=50");
+      const res = await api.get("/admin/agendamientos_recientes?limite=100");
       setAgendamientos(res.data || []);
     } catch (error) {
-      console.error("Error al cargar agendamientos:", error);
+      console.error(error);
       Swal.fire("Error", "No se pudieron cargar los agendamientos", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔹 Funciones para acciones (ver, editar, eliminar)
-  const handleView = (ag) => {
-    Swal.fire({
-      title: "Detalles del agendamiento",
-      html: `
-        <b>Cliente:</b> ${ag.cliente}<br/>
-        <b>Servicio:</b> ${ag.servicio}<br/>
-        <b>Fecha:</b> ${ag.fecha}<br/>
-        <b>Estado:</b> ${ag.estado}
-      `,
-      icon: "info",
-      confirmButtonColor: "#17a2b8",
-    });
+  const handleIniciar = async (id) => {
+    try {
+      const res = await api.post(`/agendamientos/iniciar/${id}`);
+      Swal.fire("Iniciado", res.data.message, "success");
+      cargarAgendamientos();
+    } catch (error) {
+      console.error(error);
+      Swal.fire("Error", error.response?.data?.detail || "No se pudo iniciar", "error");
+    }
   };
 
-  const handleEdit = (ag) => {
-    Swal.fire("Editar", `Función para editar agendamiento #${ag.id}`, "info");
-  };
-
-  const handleDelete = async (ag) => {
-    const result = await Swal.fire({
-      title: "¿Eliminar agendamiento?",
-      text: `Se eliminará el agendamiento de ${ag.cliente}`,
-      icon: "warning",
+  const handleFinalizar = async (id) => {
+    const { value: confirm } = await Swal.fire({
+      title: "Finalizar servicio",
+      text: "¿Deseas finalizar y generar factura?",
+      input: "select",
+      inputOptions: {
+        0: "No pagar ahora (factura pendiente)",
+        1: "Registrar pago ahora (cliente pagó en sitio)"
+      },
       showCancelButton: true,
-      confirmButtonColor: "#dc3545",
-      cancelButtonColor: "#6c757d",
-      confirmButtonText: "Sí, eliminar",
+      confirmButtonText: "Aceptar",
     });
+    if (confirm === undefined) return;
 
-    if (result.isConfirmed) {
-      try {
-        await api.delete(`/agendamientos/${ag.id}`);
-        Swal.fire("Eliminado", "El agendamiento ha sido eliminado", "success");
-        cargarAgendamientos(); // recargar la lista
-      } catch (error) {
-        Swal.fire("Error", "No se pudo eliminar el agendamiento", "error");
-      }
+    try {
+      // Si confirm === "1" -> pasar forma_pago_id = 1 (Efectivo) como ejemplo
+      const body = {};
+      if (confirm === "1") body.forma_pago_id = 1;
+      const res = await api.post("/agendamientos/finalizar", {
+        agendamiento_id: id,
+        observaciones: "",
+        calificacion: null,
+        ...body
+      });
+      Swal.fire("Finalizado", "Factura generada: " + JSON.stringify(res.data.factura), "success");
+      cargarAgendamientos();
+    } catch (error) {
+      console.error(error);
+      Swal.fire("Error", error.response?.data?.detail || "No se pudo finalizar", "error");
     }
   };
 
   if (loading) {
     return (
-      <div className="d-flex flex-column justify-content-center align-items-center vh-100">
-        <Spinner animation="border" variant="info" style={{ width: "3rem", height: "3rem" }} />
-        <p className="mt-3 text-muted">Cargando agendamientos...</p>
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <Spinner animation="border" variant="info" />
       </div>
     );
   }
 
   return (
-    <Container fluid className="p-4" style={{ marginLeft: "250px" }}>
-      <AgendamientosTable
-        data={agendamientos}
-        onView={handleView}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+    <Container fluid>
+      <h3 className="mb-3">Agendamientos</h3>
+      <Table hover responsive>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Servicio</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+            <th>Inicio real</th>
+            <th>Fin real</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {agendamientos.map((a) => (
+            <tr key={a.id}>
+              <td>#{a.id}</td>
+              <td>{a.cliente}</td>
+              <td>{a.servicio}</td>
+              <td>{a.fecha}</td>
+              <td>{a.estado}</td>
+              <td>{a.hora_inicio ? a.hora_inicio : "-"}</td>
+              <td>{a.hora_fin ? a.hora_fin : "-"}</td>
+              <td>
+                {a.estado !== "en_proceso" && (
+                  <Button size="sm" variant="success" onClick={() => handleIniciar(a.id)} className="me-2">
+                    Iniciar
+                  </Button>
+                )}
+                {a.estado !== "finalizado" && (
+                  <Button size="sm" variant="danger" onClick={() => handleFinalizar(a.id)}>
+                    Finalizar
+                  </Button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
     </Container>
   );
-};
-
-export default AdminAgendamientos;
+}

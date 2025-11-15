@@ -1,6 +1,6 @@
 from sqlalchemy import (
     Column, Integer, String, Date, Time, Text, Enum, Boolean,
-    ForeignKey, TIMESTAMP, DECIMAL
+    ForeignKey, TIMESTAMP, DECIMAL, Float, DateTime
 )
 from datetime import datetime
 from sqlalchemy.orm import relationship
@@ -134,6 +134,13 @@ class Agendamiento(Base):
     estado = Column(Enum(EstadoAgendamiento), default=EstadoAgendamiento.pendiente)
     creado_en = Column(TIMESTAMP, default=datetime.now)
     observaciones = Column(Text)
+
+    hora_inicio = Column(DateTime, nullable=True)
+    hora_fin = Column(DateTime, nullable=True)
+    horas_facturadas = Column(Float, nullable=True)
+
+    estado = Column(Enum(EstadoAgendamiento), default=EstadoAgendamiento.pendiente)
+    creado_en = Column(DateTime)
 
     persona = relationship("Persona", back_populates="agendamientos")
     servicio = relationship("Servicio", back_populates="agendamientos")

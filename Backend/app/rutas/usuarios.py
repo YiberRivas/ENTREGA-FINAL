@@ -57,6 +57,9 @@ def registrar_usuario(usuario_data: UsuarioCreate, db: Session = Depends(get_db)
     # 2️⃣ Evitar correos duplicados
     if db.query(Persona).filter(Persona.correo == usuario_data.persona.correo).first():
         raise HTTPException(status_code=400, detail="El correo ya está registrado")
+    
+    if db.query(Persona).filter(Persona.identificacion == usuario_data.persona.identificacion).first():
+        raise HTTPException(status_code=400, detail="La identificación ya está registrada")
 
     try:
         # 3️⃣ Buscar o crear rol "Cliente"

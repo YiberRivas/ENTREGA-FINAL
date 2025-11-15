@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.config.database import SessionLocal
 from app.modelos.modelos import Rol
-from fastapi.middleware.cors import CORSMiddleware
+
 # Importar todas las rutas
 from app.rutas import (
     autenticacion, usuarios, personas, servicios, agendamientos,
@@ -17,19 +19,32 @@ app = FastAPI(
 )
 
 # ==========================
-# 🌍 CONFIGURACIÓN CORS
+# 🌍 CONFIGURACIÓN CORS (OPTIMIZADA)
 # ==========================
+
+# Acepta cualquier puerto local: 5173, 5174, 5175, etc.
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # permite frontend en cualquier puerto
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
 # ==========================
 # 🚀 CARGA DE RUTAS
 # ==========================
+
 routers_map = {
     "autenticacion": autenticacion.router,
     "usuarios": usuarios.router,
@@ -45,7 +60,6 @@ routers_map = {
     "clientes": clientes.router
 }
 
-# Prefijos reales (sin duplicar)
 router_prefixes = {
     "autenticacion": "/autenticacion",
     "usuarios": "/usuarios",

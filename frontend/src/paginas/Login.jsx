@@ -11,11 +11,12 @@ export default function Login() {
     usuario: "",
     contrasena: ""
   });
+
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({ show: false, message: "", type: "" });
   const navigate = useNavigate();
 
-  // 🔹 Manejar cambios en los inputs
+  // Cambios en inputs
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -23,7 +24,7 @@ export default function Login() {
     });
   };
 
-  // 🔹 Mostrar alerta temporal
+  // Alertas
   const showAlert = (message, type) => {
     setAlert({ show: true, message, type });
     setTimeout(() => {
@@ -31,7 +32,7 @@ export default function Login() {
     }, 4000);
   };
 
-  // 🔹 Manejar envío del formulario
+  // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     const { usuario, contrasena } = formData;
@@ -44,51 +45,53 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await api.post("/autenticacion/login", { 
-        usuario: usuario, 
-        contrasena: contrasena 
+      const response = await api.post("/autenticacion/login", {
+        usuario: usuario,
+        contrasena: contrasena
       });
-      
-      // ✅ Guardar token y datos del usuario
+
+      // Validación segura de datos
+      if (!response?.data) {
+        throw new Error("Respuesta inválida del servidor");
+      }
+
       const { access_token, usuario: userData } = response.data;
+
+      if (!access_token || !userData) {
+        throw new Error("El servidor no envió datos completos");
+      }
+
+      // Guardar en localStorage
       localStorage.setItem("token", access_token);
       localStorage.setItem("usuario", JSON.stringify(userData));
 
-      console.log("🔎 Rol recibido del backend:", userData.rol);
-
-      // ✅ Normalizamos el rol para evitar errores de mayúsculas
-      const rol = (userData.rol || "").toLowerCase().trim();
-
-      console.log("✅ Rol normalizado:", rol);
-
-      // ✅ Mostrar mensaje de éxito y redirigir
-      await Swal.fire({
+      Swal.fire({
         icon: "success",
         title: "Inicio de sesión exitoso",
-        text: `Bienvenido, ${userData.nombre} 👋`,
+        text: `Bienvenido, ${userData.nombre || "Usuario"} 👋`,
         confirmButtonColor: "#28a745",
-        timer: 2000,
+        timer: 1800,
         timerProgressBar: true,
-        showConfirmButton: false
+      }).then(() => {
+        // Rol normalizado
+        const rol = (userData.rol || "").toLowerCase().trim();
+
+        // Redirecciones
+        if (rol === "administrador" || rol.includes("admin")) {
+          navigate("/admin/inicio");
+        } else if (rol === "cliente" || rol.includes("cliente")) {
+          navigate("/cliente/perfil");
+        } else {
+          navigate("/");
+        }
       });
 
-      // ✅ Redirección robusta según el rol (después del modal)
-      if (rol === "administrador" || rol.includes("admin")) {
-        console.log("➡️ Redirigiendo a: /admin/inicio");
-        navigate("/admin/inicio", { replace: true });
-      } else if (rol === "cliente" || rol.includes("cliente")) {
-        console.log("➡️ Redirigiendo a: /cliente/perfil");
-        navigate("/cliente/perfil", { replace: true });
-      } else {
-        console.log("⚠️ Rol no reconocido, redirigiendo a inicio");
-        navigate("/", { replace: true });
-      }
-
     } catch (err) {
-      console.error("❌ Error de login:", err);
+      console.error("Error de login:", err);
 
       let errorMessage = "Ocurrió un error inesperado al iniciar sesión.";
-      if (err.response && err.response.data && err.response.data.detail) {
+
+      if (err.response?.data?.detail) {
         errorMessage = err.response.data.detail;
       } else if (err.code === "ERR_NETWORK") {
         errorMessage = "Error de conexión. El servidor puede estar inactivo.";
@@ -109,6 +112,7 @@ export default function Login() {
   return (
     <div className="login-page">
       <div className="login-container">
+
         {/* Fondos animados */}
         <div className="login-background">
           <div className="floating-shape shape-1"></div>
@@ -181,10 +185,12 @@ export default function Login() {
                     </Link>
                   </p>
                 </div>
+
               </div>
             </Col>
           </Row>
         </Container>
+
       </div>
     </div>
   );
