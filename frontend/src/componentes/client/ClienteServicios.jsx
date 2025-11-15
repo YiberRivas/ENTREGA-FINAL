@@ -1,414 +1,680 @@
-import { useEffect, useState } from "react";
-import { Card, Row, Col, Button, Spinner, Form, Badge } from "react-bootstrap";
-import Swal from "sweetalert2";
-import api from "../../api/axiosConfig";
-import "../../assets/estilos/ClienteLayout.css";
+// client/client/ClienteServicios.jsx
+import { useState, useEffect } from 'react';
+import { 
+  Container, 
+  Row, 
+  Col, 
+  Card, 
+  Form, 
+  Button, 
+  Badge,
+  Modal,
+  InputGroup
+} from 'react-bootstrap';
+import { 
+  Search,
+  Filter,
+  MapPin,
+  Star,
+  Zap,
+  Shield,
+  Clock,
+  DollarSign,
+  Users,
+  CheckCircle,
+  Heart,
+  Share2
+} from 'lucide-react';
 
 export default function ClienteServicios() {
-  const [servicios, setServicios] = useState([]);
-  const [filteredServicios, setFilteredServicios] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("price");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [washers, setWashers] = useState([]);
+  const [filteredWashers, setFilteredWashers] = useState([]);
+  const [selectedWasher, setSelectedWasher] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  
+  // Estados para filtros
+  const [filters, setFilters] = useState({
+    search: '',
+    location: 'all',
+    type: 'all',
+    price: 'all',
+    status: 'all'
+  });
 
+  // Datos de ejemplo de lavadoras
+  const washerData = [
+    {
+      id: 1,
+      name: "Samsung EcoBubble",
+      type: "premium",
+      location: "Centro Comercial Santafé",
+      price: 3500,
+      status: "available",
+      image: "/lavadoras/samsung-ecobubble.jpg",
+      description: "Lavadora de última generación con tecnología EcoBubble que cuida tus prendas",
+      features: ["Capacidad 18kg", "Tecnología EcoBubble", "Ahorro energético A+++", "8 programas"],
+      specifications: {
+        capacity: "18kg",
+        programs: 8,
+        energyClass: "A+++",
+        speed: "1400 RPM"
+      },
+      rating: 4.8,
+      reviews: 124,
+      available: 3
+    },
+    {
+      id: 2,
+      name: "LG SteamWasher",
+      type: "premium", 
+      location: "Unicentro Bogotá",
+      price: 3800,
+      status: "available",
+      image: "/lavadoras/lg-steam.jpg",
+      description: "Lavadora con tecnología Steam que elimina bacterias y alergenos",
+      features: ["Tecnología Steam", "Capacidad 17kg", "SmartThinQ", "Cuidado de prendas"],
+      specifications: {
+        capacity: "17kg",
+        programs: 6,
+        energyClass: "A+++",
+        speed: "1200 RPM"
+      },
+      rating: 4.9,
+      reviews: 89,
+      available: 2
+    },
+    {
+      id: 3,
+      name: "Whirlpool Ultimate Care",
+      type: "standard",
+      location: "Centro Comercial Andino", 
+      price: 3000,
+      status: "available",
+      image: "/lavadoras/whirlpool.jpg",
+      description: "Lavadora confiable con excelente relación calidad-precio",
+      features: ["Capacidad 15kg", "6th Sense Technology", "6 programas", "Display digital"],
+      specifications: {
+        capacity: "15kg",
+        programs: 6,
+        energyClass: "A++",
+        speed: "1000 RPM"
+      },
+      rating: 4.5,
+      reviews: 203,
+      available: 5
+    },
+    {
+      id: 4,
+      name: "Miele Compact",
+      type: "compact",
+      location: "Plaza de las Américas",
+      price: 2800,
+      status: "available",
+      image: "/lavadoras/miele-compact.jpg",
+      description: "Lavadora compacta ideal para espacios pequeños",
+      features: ["Capacidad 8kg", "Diseño compacto", "Silenciosa", "Económica"],
+      specifications: {
+        capacity: "8kg",
+        programs: 4,
+        energyClass: "A+++",
+        speed: "800 RPM"
+      },
+      rating: 4.6,
+      reviews: 67,
+      available: 1
+    },
+    {
+      id: 5,
+      name: "Bosch Silence",
+      type: "standard",
+      location: "Centro Comercial Santafé",
+      price: 3200,
+      status: "maintenance",
+      image: "/lavadoras/bosch-silence.jpg",
+      description: "Tecnología silenciosa perfecta para hogares",
+      features: ["Tecnología Silence", "Capacidad 14kg", "EcoSilence Drive", "5 programas"],
+      specifications: {
+        capacity: "14kg",
+        programs: 5,
+        energyClass: "A++",
+        speed: "1100 RPM"
+      },
+      rating: 4.7,
+      reviews: 156,
+      available: 0
+    },
+    {
+      id: 6,
+      name: "Haier Smart",
+      type: "premium",
+      location: "Unicentro Bogotá",
+      price: 4000,
+      status: "available",
+      image: "/lavadoras/haier-smart.jpg",
+      description: "Lavadora inteligente con control desde tu smartphone",
+      features: ["Control WiFi", "Capacidad 20kg", "Auto-dosificación", "12 programas"],
+      specifications: {
+        capacity: "20kg",
+        programs: 12,
+        energyClass: "A+++",
+        speed: "1600 RPM"
+      },
+      rating: 4.9,
+      reviews: 45,
+      available: 2
+    }
+  ];
+
+  // Opciones de filtros
+  const filterOptions = {
+    location: [
+      { value: 'all', label: 'Todas las ubicaciones' },
+      { value: 'Centro Comercial Santafé', label: 'Centro Comercial Santafé' },
+      { value: 'Unicentro Bogotá', label: 'Unicentro Bogotá' },
+      { value: 'Centro Comercial Andino', label: 'Centro Comercial Andino' },
+      { value: 'Plaza de las Américas', label: 'Plaza de las Américas' }
+    ],
+    type: [
+      { value: 'all', label: 'Todos los tipos' },
+      { value: 'premium', label: 'Premium' },
+      { value: 'standard', label: 'Estándar' },
+      { value: 'compact', label: 'Compacta' }
+    ],
+    price: [
+      { value: 'all', label: 'Cualquier precio' },
+      { value: 'low', label: 'Menos de $3,000' },
+      { value: 'medium', label: '$3,000 - $4,000' },
+      { value: 'high', label: 'Más de $4,000' }
+    ],
+    status: [
+      { value: 'all', label: 'Todos los estados' },
+      { value: 'available', label: 'Disponible' },
+      { value: 'maintenance', label: 'En mantenimiento' }
+    ]
+  };
+
+  // Inicializar datos
   useEffect(() => {
-    cargarServicios();
+    setWashers(washerData);
+    setFilteredWashers(washerData);
   }, []);
 
+  // Aplicar filtros
   useEffect(() => {
-    filterAndSortServicios();
-  }, [servicios, filter, sortBy, searchTerm]);
+    let result = washers;
 
-  const cargarServicios = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/servicios/");
-      const data = Array.isArray(res.data)
-        ? res.data.map((s) => ({
-            id: s.id_servicio ?? s.id ?? s.idService,
-            nombre: s.nombre_servicio ?? s.nombre ?? s.name,
-            descripcion: s.descripcion ?? s.desc ?? "",
-            precio: s.precio_base ?? s.precio ?? 0,
-            duracion: s.duracion_minutos ?? s.duracion ?? 60,
-            tipo: s.tipo_servicio ?? s.tipo ?? "standard",
-            capacidad: s.capacidad ?? "15 kg",
-            disponible: s.disponible ?? true,
-            popular: s.popular ?? false,
-            imagen: s.imagen_url ?? s.imagen ?? getDefaultImage(s.tipo_servicio ?? s.tipo)
-          }))
-        : [];
-      setServicios(data);
-    } catch (error) {
-      console.error(error);
-      Swal.fire("Error", error.response?.data?.detail || "No se pudieron cargar los servicios", "error");
-    } finally {
-      setLoading(false);
+    // Filtro de búsqueda
+    if (filters.search) {
+      result = result.filter(washer =>
+        washer.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+        washer.description.toLowerCase().includes(filters.search.toLowerCase())
+      );
+    }
+
+    // Filtro de ubicación
+    if (filters.location !== 'all') {
+      result = result.filter(washer => washer.location === filters.location);
+    }
+
+    // Filtro de tipo
+    if (filters.type !== 'all') {
+      result = result.filter(washer => washer.type === filters.type);
+    }
+
+    // Filtro de precio
+    if (filters.price !== 'all') {
+      switch (filters.price) {
+        case 'low':
+          result = result.filter(washer => washer.price < 3000);
+          break;
+        case 'medium':
+          result = result.filter(washer => washer.price >= 3000 && washer.price <= 4000);
+          break;
+        case 'high':
+          result = result.filter(washer => washer.price > 4000);
+          break;
+      }
+    }
+
+    // Filtro de estado
+    if (filters.status !== 'all') {
+      result = result.filter(washer => washer.status === filters.status);
+    }
+
+    setFilteredWashers(result);
+  }, [filters, washers]);
+
+  const handleFilterChange = (filterType, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: value
+    }));
+  };
+
+  const handleWasherClick = (washer) => {
+    setSelectedWasher(washer);
+    setShowDetailModal(true);
+  };
+
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'premium': return <Star className="text-warning" size={20} />;
+      case 'standard': return <Zap className="text-success" size={20} />;
+      case 'compact': return <Shield className="text-info" size={20} />;
+      default: return <Zap size={20} />;
     }
   };
 
-  const getDefaultImage = (tipo) => {
-    const images = {
-      'lavadora': 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
-      'secadora': 'https://images.unsplash.com/photo-1581993192008-63fd1ea7de1a?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
-      'express': 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
-      'premium': 'https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80'
-    };
-    return images[tipo?.toLowerCase()] || images.lavadora;
-  };
-
-  const filterAndSortServicios = () => {
-    let filtered = servicios.filter(servicio => {
-      // Filtro por tipo
-      const typeMatch = filter === "all" || servicio.tipo === filter;
-      // Filtro por búsqueda
-      const searchMatch = servicio.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         servicio.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
-      return typeMatch && searchMatch;
-    });
-
-    // Ordenamiento
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "price":
-          return a.precio - b.precio;
-        case "price-desc":
-          return b.precio - a.precio;
-        case "name":
-          return a.nombre.localeCompare(b.nombre);
-        case "popular":
-          return (b.popular ? 1 : 0) - (a.popular ? 1 : 0);
-        default:
-          return 0;
-      }
-    });
-
-    setFilteredServicios(filtered);
-  };
-
-  const handleAgendar = async (servicio) => {
-    const { value: formValues } = await Swal.fire({
-      title: `Agendar ${servicio.nombre}`,
-      html: `
-        <div class="text-start">
-          <label for="swal-fecha" class="form-label">Fecha</label>
-          <input type="date" id="swal-fecha" class="form-control" min="${new Date().toISOString().split('T')[0]}" required>
-          
-          <label for="swal-hora" class="form-label mt-3">Hora de inicio</label>
-          <select id="swal-hora" class="form-select" required>
-            <option value="">Selecciona una hora</option>
-            <option value="08:00">8:00 AM</option>
-            <option value="10:00">10:00 AM</option>
-            <option value="12:00">12:00 PM</option>
-            <option value="14:00">2:00 PM</option>
-            <option value="16:00">4:00 PM</option>
-          </select>
-        </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: "Confirmar Reserva",
-      cancelButtonText: "Cancelar",
-      confirmButtonColor: "#00C6B3",
-      preConfirm: () => {
-        const fecha = document.getElementById('swal-fecha').value;
-        const hora = document.getElementById('swal-hora').value;
-        if (!fecha || !hora) {
-          Swal.showValidationMessage('Por favor completa todos los campos');
-        }
-        return { fecha, hora };
-      }
-    });
-
-    if (formValues) {
-      try {
-        const payload = { 
-          fecha: formValues.fecha,
-          hora: formValues.hora + ":00"
-        };
-        await api.post(`/clientes/agendar/${servicio.id}`, payload);
-        Swal.fire({
-          title: "¡Reserva Confirmada!",
-          text: `Tu servicio ${servicio.nombre} ha sido agendado para el ${formValues.fecha} a las ${formValues.hora}`,
-          icon: "success",
-          confirmButtonColor: "#00C6B3"
-        });
-      } catch (error) {
-        console.error(error);
-        Swal.fire("Error", error.response?.data?.detail || "No se pudo agendar el servicio", "error");
-      }
+  const getTypeBadge = (type) => {
+    switch (type) {
+      case 'premium': return { label: 'Premium', variant: 'warning' };
+      case 'standard': return { label: 'Estándar', variant: 'success' };
+      case 'compact': return { label: 'Compacta', variant: 'info' };
+      default: return { label: type, variant: 'secondary' };
     }
   };
 
-  const getServiceIcon = (tipo) => {
-    const icons = {
-      'lavadora': 'fa-tshirt',
-      'secadora': 'fa-wind',
-      'express': 'fa-bolt',
-      'premium': 'fa-crown',
-      'standard': 'fa-tint'
-    };
-    return icons[tipo] || 'fa-tint';
+  const getStatusBadge = (status, available) => {
+    if (status === 'maintenance') {
+      return { label: 'En Mantenimiento', variant: 'danger' };
+    }
+    return available > 0 
+      ? { label: `${available} Disponibles`, variant: 'success' }
+      : { label: 'Agotado', variant: 'danger' };
   };
 
-  const getServiceBadge = (tipo) => {
-    const badges = {
-      'lavadora': { text: 'Lavadora', variant: 'primary' },
-      'secadora': { text: 'Secadora', variant: 'info' },
-      'express': { text: 'Express', variant: 'warning' },
-      'premium': { text: 'Premium', variant: 'success' },
-      'standard': { text: 'Estándar', variant: 'secondary' }
-    };
-    const badge = badges[tipo] || { text: tipo, variant: 'secondary' };
-    return <Badge className={`service-badge ${badge.variant}`}>{badge.text}</Badge>;
-  };
-
-  if (loading) {
+  const renderStars = (rating) => {
     return (
-      <div className="loading-container">
-        <div className="spinner-container">
-          <Spinner animation="border" variant="primary" />
-          <p>Cargando servicios...</p>
-        </div>
+      <div className="d-flex align-items-center">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            size={16}
+            className={star <= rating ? 'text-warning fill-warning' : 'text-muted'}
+            fill={star <= rating ? 'currentColor' : 'none'}
+          />
+        ))}
+        <small className="text-muted ms-2">({rating})</small>
       </div>
     );
-  }
+  };
 
   return (
-    <div className="servicios-container">
-      <div className="servicios-header">
-        <div className="header-content">
-          <h1>Servicios Disponibles</h1>
-          <p>Descubre todos nuestros servicios de lavandería y elige el que mejor se adapte a tus necesidades</p>
-        </div>
-      </div>
+    <Container fluid>
+      {/* Header */}
+      <Row className="mb-4">
+        <Col>
+          <div className="text-center">
+            <h1 className="fw-bold mb-3">Lavadoras Disponibles</h1>
+            <p className="text-muted fs-5">
+              Encuentra la lavadora perfecta para tus necesidades
+            </p>
+          </div>
+        </Col>
+      </Row>
 
-      <div className="container-fluid">
-        {/* Filtros y Búsqueda */}
-        <Card className="filter-card mb-4">
-          <Card.Body>
-            <Row className="align-items-center">
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label className="form-label">Buscar Servicios</Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Buscar por nombre o descripción..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="search-input"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label className="form-label">Filtrar por Tipo</Form.Label>
+      {/* Filtros */}
+      <Row className="mb-4">
+        <Col>
+          <Card className="border-0 shadow-sm">
+            <Card.Body className="p-4">
+              <Row className="g-3 align-items-end">
+                {/* Búsqueda */}
+                <Col md={3}>
+                  <Form.Label className="fw-bold">Buscar lavadora</Form.Label>
+                  <InputGroup>
+                    <InputGroup.Text>
+                      <Search size={18} />
+                    </InputGroup.Text>
+                    <Form.Control
+                      type="text"
+                      placeholder="Nombre o características..."
+                      value={filters.search}
+                      onChange={(e) => handleFilterChange('search', e.target.value)}
+                    />
+                  </InputGroup>
+                </Col>
+
+                {/* Filtro de ubicación */}
+                <Col md={2}>
+                  <Form.Label className="fw-bold">Ubicación</Form.Label>
                   <Form.Select
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                    className="filter-select"
+                    value={filters.location}
+                    onChange={(e) => handleFilterChange('location', e.target.value)}
                   >
-                    <option value="all">Todos los Servicios</option>
-                    <option value="lavadora">Lavadoras</option>
-                    <option value="secadora">Secadoras</option>
-                    <option value="express">Servicio Express</option>
-                    <option value="premium">Premium</option>
+                    {filterOptions.location.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label className="form-label">Ordenar por</Form.Label>
+                </Col>
+
+                {/* Filtro de tipo */}
+                <Col md={2}>
+                  <Form.Label className="fw-bold">Tipo</Form.Label>
                   <Form.Select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="sort-select"
+                    value={filters.type}
+                    onChange={(e) => handleFilterChange('type', e.target.value)}
                   >
-                    <option value="price">Precio: Menor a Mayor</option>
-                    <option value="price-desc">Precio: Mayor a Menor</option>
-                    <option value="name">Nombre A-Z</option>
-                    <option value="popular">Más Populares</option>
+                    {filterOptions.type.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </Form.Select>
-                </Form.Group>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
+                </Col>
 
-        {/* Estadísticas Rápidas */}
-        <Row className="stats-row mb-4">
-          <Col lg={3} md={6} className="mb-3">
-            <Card className="stat-card">
-              <Card.Body>
-                <div className="stat-icon total">
-                  <i className="fas fa-list"></i>
-                </div>
-                <div className="stat-info">
-                  <span className="stat-value">{servicios.length}</span>
-                  <span className="stat-label">Total Servicios</span>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col lg={3} md={6} className="mb-3">
-            <Card className="stat-card">
-              <Card.Body>
-                <div className="stat-icon available">
-                  <i className="fas fa-check-circle"></i>
-                </div>
-                <div className="stat-info">
-                  <span className="stat-value">{servicios.filter(s => s.disponible).length}</span>
-                  <span className="stat-label">Disponibles</span>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col lg={3} md={6} className="mb-3">
-            <Card className="stat-card">
-              <Card.Body>
-                <div className="stat-icon popular">
-                  <i className="fas fa-star"></i>
-                </div>
-                <div className="stat-info">
-                  <span className="stat-value">{servicios.filter(s => s.popular).length}</span>
-                  <span className="stat-label">Populares</span>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col lg={3} md={6} className="mb-3">
-            <Card className="stat-card">
-              <Card.Body>
-                <div className="stat-icon premium">
-                  <i className="fas fa-crown"></i>
-                </div>
-                <div className="stat-info">
-                  <span className="stat-value">{servicios.filter(s => s.tipo === 'premium').length}</span>
-                  <span className="stat-label">Premium</span>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+                {/* Filtro de precio */}
+                <Col md={2}>
+                  <Form.Label className="fw-bold">Precio</Form.Label>
+                  <Form.Select
+                    value={filters.price}
+                    onChange={(e) => handleFilterChange('price', e.target.value)}
+                  >
+                    {filterOptions.price.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Col>
 
-        {/* Grid de Servicios */}
-        {filteredServicios.length === 0 ? (
-          <Card className="empty-card">
-            <Card.Body className="text-center py-5">
-              <i className="fas fa-search empty-icon"></i>
-              <h4>No se encontraron servicios</h4>
-              <p className="text-muted">Intenta ajustar los filtros de búsqueda</p>
-              <Button 
-                variant="primary" 
-                onClick={() => {
-                  setFilter("all");
-                  setSearchTerm("");
-                }}
-              >
-                <i className="fas fa-refresh"></i>
-                Mostrar Todos los Servicios
-              </Button>
+                {/* Filtro de estado */}
+                <Col md={2}>
+                  <Form.Label className="fw-bold">Estado</Form.Label>
+                  <Form.Select
+                    value={filters.status}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                  >
+                    {filterOptions.status.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Col>
+
+                {/* Contador de resultados */}
+                <Col md={1}>
+                  <div className="text-center">
+                    <Badge bg="primary" className="fs-6 p-2">
+                      {filteredWashers.length}
+                    </Badge>
+                    <div className="text-muted small mt-1">Resultados</div>
+                  </div>
+                </Col>
+              </Row>
             </Card.Body>
           </Card>
-        ) : (
-          <Row>
-            {filteredServicios.map((servicio) => (
-              <Col xl={4} lg={6} md={6} key={servicio.id} className="mb-4">
-                <Card className="service-card">
-                  <div className="service-image-container">
-                    <img 
-                      src={servicio.imagen} 
-                      alt={servicio.nombre}
-                      className="service-image"
-                    />
-                    {servicio.popular && (
-                      <div className="popular-badge">
-                        <i className="fas fa-star"></i>
-                        Popular
-                      </div>
-                    )}
-                    {!servicio.disponible && (
-                      <div className="unavailable-overlay">
-                        No Disponible
-                      </div>
-                    )}
+        </Col>
+      </Row>
+
+      {/* Grid de Lavadoras */}
+      <Row className="g-4">
+        {filteredWashers.length > 0 ? (
+          filteredWashers.map((washer) => {
+            const typeBadge = getTypeBadge(washer.type);
+            const statusBadge = getStatusBadge(washer.status, washer.available);
+
+            return (
+              <Col key={washer.id} xl={4} lg={6}>
+                <Card 
+                  className="border-0 shadow-sm h-100 washer-card"
+                  style={{ 
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onClick={() => handleWasherClick(washer)}
+                >
+                  {/* Ribbon de estado */}
+                  <div className="position-absolute top-0 end-0 m-2">
+                    <Badge bg={statusBadge.variant}>
+                      {statusBadge.label}
+                    </Badge>
                   </div>
-                  
-                  <Card.Body>
-                    <div className="service-header">
-                      <div className="service-title-section">
-                        <h5 className="service-title">{servicio.nombre}</h5>
-                        {getServiceBadge(servicio.tipo)}
-                      </div>
-                      <div className="service-icon">
-                        <i className={`fas ${getServiceIcon(servicio.tipo)}`}></i>
-                      </div>
+
+                  {/* Imagen de la lavadora */}
+                  <div 
+                    className="bg-light position-relative"
+                    style={{ 
+                      height: '200px', 
+                      background: `linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <div className="text-center">
+                      {getTypeIcon(washer.type)}
+                      <div className="mt-2 text-muted small">Imagen de referencia</div>
                     </div>
-                    
-                    <p className="service-description">{servicio.descripcion}</p>
-                    
-                    <div className="service-details">
-                      <div className="detail-item">
-                        <i className="fas fa-clock"></i>
-                        <span>{servicio.duracion} minutos</span>
-                      </div>
-                      <div className="detail-item">
-                        <i className="fas fa-weight"></i>
-                        <span>{servicio.capacidad}</span>
-                      </div>
+                  </div>
+
+                  <Card.Body className="p-4">
+                    {/* Header con nombre y tipo */}
+                    <div className="d-flex justify-content-between align-items-start mb-3">
+                      <h5 className="fw-bold mb-0">{washer.name}</h5>
+                      <Badge bg={typeBadge.variant} className="ms-2">
+                        {typeBadge.label}
+                      </Badge>
                     </div>
-                    
-                    <div className="service-footer">
-                      <div className="price-section">
-                        <span className="price-label">Desde</span>
-                        <span className="price">${servicio.precio.toLocaleString()}</span>
-                        <span className="price-unit">/servicio</span>
+
+                    {/* Ubicación */}
+                    <div className="d-flex align-items-center mb-3">
+                      <MapPin size={16} className="text-primary me-2" />
+                      <small className="text-muted">{washer.location}</small>
+                    </div>
+
+                    {/* Descripción */}
+                    <p className="text-muted small mb-3">
+                      {washer.description}
+                    </p>
+
+                    {/* Características principales */}
+                    <div className="mb-3">
+                      {washer.features.slice(0, 3).map((feature, index) => (
+                        <Badge 
+                          key={index} 
+                          bg="light" 
+                          text="dark" 
+                          className="me-1 mb-1 small"
+                        >
+                          {feature}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    {/* Rating y reviews */}
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      {renderStars(washer.rating)}
+                      <small className="text-muted">({washer.reviews} reviews)</small>
+                    </div>
+
+                    {/* Precio y acción */}
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h4 className="text-primary fw-bold mb-0">
+                          ${washer.price} COP/h
+                        </h4>
+                        <small className="text-muted">por hora</small>
                       </div>
                       
-                      <Button
-                        variant="primary"
-                        className="book-btn"
-                        onClick={() => handleAgendar(servicio)}
-                        disabled={!servicio.disponible}
+                      <Button 
+                        variant="primary" 
+                        size="sm"
+                        disabled={washer.status === 'maintenance' || washer.available === 0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = `/cliente/agendar?washer=${washer.id}`;
+                        }}
                       >
-                        {servicio.disponible ? (
-                          <>
-                            <i className="fas fa-calendar-plus"></i>
-                            Reservar Ahora
-                          </>
-                        ) : (
-                          <>
-                            <i className="fas fa-clock"></i>
-                            No Disponible
-                          </>
-                        )}
+                        Reservar Ahora
                       </Button>
                     </div>
                   </Card.Body>
                 </Card>
               </Col>
-            ))}
-          </Row>
-        )}
-
-        {/* Información Adicional */}
-        <Card className="info-card mt-4">
-          <Card.Body>
-            <Row className="align-items-center">
-              <Col md={8}>
-                <h6>¿No encuentras lo que buscas?</h6>
-                <p className="mb-0">Contáctanos para servicios personalizados o consultas especiales</p>
-              </Col>
-              <Col md={4} className="text-end">
-                <Button variant="outline-primary">
-                  <i className="fas fa-headset"></i>
-                  Contactar Soporte
+            );
+          })
+        ) : (
+          <Col>
+            <Card className="border-0 shadow-sm text-center py-5">
+              <Card.Body>
+                <Filter size={48} className="text-muted mb-3" />
+                <h4 className="text-muted">No se encontraron lavadoras</h4>
+                <p className="text-muted">
+                  Intenta ajustar los filtros para ver más resultados
+                </p>
+                <Button 
+                  variant="outline-primary"
+                  onClick={() => setFilters({
+                    search: '',
+                    location: 'all',
+                    type: 'all',
+                    price: 'all',
+                    status: 'all'
+                  })}
+                >
+                  Limpiar filtros
                 </Button>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-      </div>
-    </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        )}
+      </Row>
+
+      {/* Modal de Detalles */}
+      <Modal 
+        show={showDetailModal} 
+        onHide={() => setShowDetailModal(false)} 
+        size="lg"
+        centered
+      >
+        {selectedWasher && (
+          <>
+            <Modal.Header closeButton>
+              <Modal.Title className="fw-bold">
+                {selectedWasher.name}
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <Row>
+                <Col md={6}>
+                  {/* Imagen */}
+                  <div 
+                    className="bg-light rounded mb-3"
+                    style={{ 
+                      height: '200px', 
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {getTypeIcon(selectedWasher.type)}
+                    <span className="ms-2 fw-bold">{getTypeBadge(selectedWasher.type).label}</span>
+                  </div>
+
+                  {/* Información básica */}
+                  <div className="mb-4">
+                    <div className="d-flex align-items-center mb-2">
+                      <MapPin size={18} className="text-primary me-2" />
+                      <strong>Ubicación:</strong>
+                      <span className="ms-2">{selectedWasher.location}</span>
+                    </div>
+                    
+                    <div className="d-flex align-items-center mb-2">
+                      <DollarSign size={18} className="text-primary me-2" />
+                      <strong>Precio:</strong>
+                      <span className="ms-2 text-primary fw-bold fs-5">
+                        ${selectedWasher.price} COP/h
+                      </span>
+                    </div>
+
+                    <div className="d-flex align-items-center mb-2">
+                      <Users size={18} className="text-primary me-2" />
+                      <strong>Disponibilidad:</strong>
+                      <Badge 
+                        bg={getStatusBadge(selectedWasher.status, selectedWasher.available).variant}
+                        className="ms-2"
+                      >
+                        {getStatusBadge(selectedWasher.status, selectedWasher.available).label}
+                      </Badge>
+                    </div>
+
+                    {renderStars(selectedWasher.rating)}
+                    <small className="text-muted">({selectedWasher.reviews} reviews)</small>
+                  </div>
+                </Col>
+
+                <Col md={6}>
+                  {/* Descripción */}
+                  <h6 className="fw-bold">Descripción</h6>
+                  <p className="text-muted mb-4">{selectedWasher.description}</p>
+
+                  {/* Especificaciones */}
+                  <h6 className="fw-bold">Especificaciones</h6>
+                  <Row className="mb-4">
+                    <Col sm={6}>
+                      <div className="mb-2">
+                        <small className="text-muted">Capacidad</small>
+                        <div className="fw-bold">{selectedWasher.specifications.capacity}</div>
+                      </div>
+                    </Col>
+                    <Col sm={6}>
+                      <div className="mb-2">
+                        <small className="text-muted">Programas</small>
+                        <div className="fw-bold">{selectedWasher.specifications.programs}</div>
+                      </div>
+                    </Col>
+                    <Col sm={6}>
+                      <div className="mb-2">
+                        <small className="text-muted">Clase energética</small>
+                        <div className="fw-bold">{selectedWasher.specifications.energyClass}</div>
+                      </div>
+                    </Col>
+                    <Col sm={6}>
+                      <div className="mb-2">
+                        <small className="text-muted">Velocidad</small>
+                        <div className="fw-bold">{selectedWasher.specifications.speed}</div>
+                      </div>
+                    </Col>
+                  </Row>
+
+                  {/* Características */}
+                  <h6 className="fw-bold">Características</h6>
+                  <div className="mb-4">
+                    {selectedWasher.features.map((feature, index) => (
+                      <div key={index} className="d-flex align-items-center mb-2">
+                        <CheckCircle size={16} className="text-success me-2" />
+                        <small>{feature}</small>
+                      </div>
+                    ))}
+                  </div>
+                </Col>
+              </Row>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button 
+                variant="outline-secondary"
+                onClick={() => setShowDetailModal(false)}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                variant="primary"
+                disabled={selectedWasher.status === 'maintenance' || selectedWasher.available === 0}
+                onClick={() => {
+                  setShowDetailModal(false);
+                  window.location.href = `/cliente/agendar?washer=${selectedWasher.id}`;
+                }}
+              >
+                Reservar Esta Lavadora
+              </Button>
+            </Modal.Footer>
+          </>
+        )}
+      </Modal>
+    </Container>
   );
 }
