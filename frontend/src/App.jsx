@@ -20,96 +20,101 @@ import ClienteInicio from "./componentes/client/ClienteInicio";
 import ClientePerfil from "./componentes/client/ClientePerfil";
 import ClienteServicios from "./componentes/client/ClienteServicios";
 import ClienteHistorial from "./componentes/client/ClienteHistorial";
-import SolicitarServicio from "./componentes/admin/Agendar";
-/* import ClienteAgendamientos from "./componentes/client/ClienteAgendamientos";
- */
+import CrearAgendamiento from "./componentes/client/CrearAgendamiento";
+import MisAgendamientosCliente from "./componentes/client/MisAgendamientosCliente"; // Componente clave
+
 function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        {/* 🌐 PÚBLICAS */}
-        <Route path="/" element={<Inicio />} />
-        <Route path="/inicio" element={<Inicio />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/registro" element={<Registro />} />
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* 🌐 PÚBLICAS */}
+        <Route path="/" element={<Inicio />} />
+        <Route path="/inicio" element={<Inicio />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/registro" element={<Registro />} />
 
-        {/* 🔐 PRIVADAS ADMIN */}
-        <Route
-          path="/admin"
-          element={
-            <RutaPrivada rol="administrador">
-              <AdminLayout />
-            </RutaPrivada>
-          }
-        >
-          <Route index element={<Navigate to="inicio" replace />} />
-          <Route path="inicio" element={<AdminInicio />} />
-          <Route path="dashboard" element={<AdminInicio />} />
-          <Route path="usuarios" element={<Usuarios />} />
-          <Route path="servicios" element={<Servicios />} />
-          <Route path="agendar" element={<Agendar />} />
-          <Route path="pagos" element={<Pagos />} />
-          <Route path="facturas" element={<Facturas />} />
-          <Route path="agendamientos" element={<AgendamientosPage />} />
-          
-          {/* Rutas adicionales para admin */}
-          <Route path="resumen" element={<AdminInicio />} />
-          <Route path="estadisticas" element={<AdminInicio />} />
-        </Route>
+        {/* 🔐 PRIVADAS ADMIN */}
+        <Route
+          path="/admin"
+          element={
+            <RutaPrivada rol="administrador">
+              <AdminLayout />
+            </RutaPrivada>
+          }
+        >
+          <Route index element={<Navigate to="inicio" replace />} />
+          <Route path="inicio" element={<AdminInicio />} />
+          <Route path="dashboard" element={<AdminInicio />} />
+          <Route path="usuarios" element={<Usuarios />} />
+          <Route path="servicios" element={<Servicios />} />
+          <Route path="agendar" element={<Agendar />} />
+          <Route path="pagos" element={<Pagos />} />
+          <Route path="facturas" element={<Facturas />} />
+          <Route path="agendamientos" element={<AgendamientosPage />} />
+          
+          <Route path="resumen" element={<AdminInicio />} />
+          <Route path="estadisticas" element={<AdminInicio />} />
+        </Route>
 
-        {/* 👤 PRIVADAS CLIENTE */}
-        <Route
-          path="/cliente"
-          element={
-            <RutaPrivada rol="cliente">
-              <ClienteLayout />
-            </RutaPrivada>
-          }
-        >
-          <Route index element={<Navigate to="inicio" replace />} />
-          <Route path="inicio" element={<ClienteInicio />} />
-          <Route path="perfil" element={<ClientePerfil />} />
-          <Route path="servicios" element={<ClienteServicios />} />
-          <Route path="agendar" element={<SolicitarServicio />} />
-{/*           <Route path="agendamientos" element={<ClienteAgendamientos />} />
- */}          <Route path="historial" element={<ClienteHistorial />} />
-          
-          {/* Rutas adicionales para cliente */}
-          <Route path="dashboard" element={<ClienteInicio />} />
-{/*           <Route path="reservas" element={<ClienteAgendamientos />} /> */}
-    {/*       <Route path="mis-reservas" element={<ClienteAgendamientos />} /> */}
-        </Route>
+        {/* 👤 PRIVADAS CLIENTE */}
+        <Route
+          path="/cliente"
+          element={
+            <RutaPrivada rol="cliente">
+              <ClienteLayout />
+            </RutaPrivada>
+          }
+        >
+          <Route index element={<Navigate to="inicio" replace />} />
+          <Route path="inicio" element={<ClienteInicio />} />
+          <Route path="perfil" element={<ClientePerfil />} />
+          
+          {/* Opción para ver el catálogo y luego Agendar */}
+          <Route path="servicios" element={<ClienteServicios />} /> 
 
-        {/* 📱 RUTAS ESPECIALES */}
-        <Route path="/soporte" element={<Inicio />} />
-        <Route path="/contacto" element={<Inicio />} />
-        <Route path="/acerca-de" element={<Inicio />} />
-        <Route path="/terminos" element={<Inicio />} />
-        <Route path="/privacidad" element={<Inicio />} />
+          {/* Formulario para AGENDAR una nueva cita */}
+          <Route path="agendar" element={<CrearAgendamiento />} /> 
+          
+          {/* Listado de servicios activos (Cancelar/Finalizar) */}
+          <Route path="mis-servicios" element={<MisAgendamientosCliente />} /> 
+          
+          {/* Historial de servicios finalizados/cancelados */}
+          <Route path="historial" element={<ClienteHistorial />} />
+          
+          <Route path="dashboard" element={<ClienteInicio />} />
+        </Route>
 
-        {/* ❌ Cualquier otra ruta - Redirección inteligente */}
-        <Route path="*" element={<RutaNoEncontrada />} />
-      </Routes>
-    </BrowserRouter>
-  );
+        {/* 📱 RUTAS ESPECIALES */}
+        <Route path="/soporte" element={<Inicio />} />
+        <Route path="/contacto" element={<Inicio />} />
+        <Route path="/acerca-de" element={<Inicio />} />
+        <Route path="/terminos" element={<Inicio />} />
+        <Route path="/privacidad" element={<Inicio />} />
+
+        {/* ❌ Cualquier otra ruta - Redirección inteligente */}
+        <Route path="*" element={<RutaNoEncontrada />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 // Componente para rutas no encontradas
 function RutaNoEncontrada() {
-  // Verificar si el usuario está logueado para redirigir apropiadamente
-  const token = localStorage.getItem("token");
-  const usuario = localStorage.getItem("usuario");
-  
-  if (token && usuario) {
-    const userData = JSON.parse(usuario);
-    if (userData.rol === 'administrador') {
-      return <Navigate to="/admin/inicio" replace />;
-    } else {
-      return <Navigate to="/cliente/inicio" replace />;
-    }
-  }
-  
-  return <Navigate to="/" replace />;
+  // Usamos sessionStorage si el token es un JWT o si es un token de sesión
+  // Si estás usando Firebase Auth, usa getAuth() para chequear el estado de autenticación.
+  const token = localStorage.getItem("token");
+  const usuario = localStorage.getItem("usuario");
+  
+  if (token && usuario) {
+    const userData = JSON.parse(usuario);
+    if (userData.rol === 'administrador') {
+      return <Navigate to="/admin/inicio" replace />;
+    } else {
+      return <Navigate to="/cliente/inicio" replace />;
+    }
+  }
+  
+  return <Navigate to="/" replace />;
 }
 
 export default App;

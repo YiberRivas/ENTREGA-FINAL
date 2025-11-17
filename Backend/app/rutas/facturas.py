@@ -157,25 +157,182 @@ def ver_factura(factura_id: int, db: Session = Depends(get_db)):
     """
 
     html_template = Template("""
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Factura N° {{ factura.id_factura }}</title>
-        <style>{{ css }}</style>
-    </head>
-    <body>
-        <div class="factura">
-            <h1>🧾 Factura N° {{ factura.id_factura }}</h1>
-            <p><strong>Cliente:</strong> {{ cliente.nombres }} {{ cliente.apellidos }}</p>
-            <p><strong>Correo:</strong> {{ cliente.correo }}</p>
-            <p><strong>Total:</strong> ${{ "{:,.2f}".format(factura.total) }}</p>
-            <p><strong>Estado:</strong> {{ factura.estado }}</p>
-            <p><strong>Fecha:</strong> {{ factura.fecha.strftime("%d/%m/%Y %H:%M") }}</p>
-            <hr>
-            <p style="text-align:center;color:#666;">Gracias por confiar en nosotros - Servilavadora S.A.S</p>
-        </div>
-    </body>
-    </html>
+   <!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Factura</title>
+
+  <style>
+    @page {
+      margin: 25mm;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #f1f4f9;
+      padding: 0;
+      margin: 0;
+      color: #333;
+    }
+
+    .wrapper {
+      max-width: 750px;
+      margin: auto;
+      background: white;
+      padding: 40px 50px;
+      border-radius: 18px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+    }
+
+    /* ENCABEZADO */
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid #0d6efd;
+    }
+
+    .header img {
+      width: 120px;
+      margin-bottom: 10px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin: 0;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #0d6efd;
+      letter-spacing: 1px;
+    }
+
+    /* INFO */
+    .info {
+      margin: 25px 0;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .info span {
+      font-weight: bold;
+      color: #0d6efd;
+    }
+
+    /* TABLA */
+    table {
+      width: 100%;
+      margin-top: 15px;
+      border-collapse: collapse;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    thead {
+      background: #0d6efd;
+      color: white;
+    }
+
+    th {
+      padding: 12px;
+      text-align: left;
+      font-size: 15px;
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f5f8ff;
+    }
+
+    tbody tr:hover {
+      background: #e9f2ff;
+    }
+
+    /* TOTAL */
+    .total-box {
+      margin-top: 25px;
+      text-align: right;
+    }
+
+    .total-box span {
+      display: inline-block;
+      background: #198754;
+      padding: 12px 20px;
+      font-size: 22px;
+      color: white;
+      font-weight: bold;
+      border-radius: 10px;
+      box-shadow: 0 5px 18px rgba(25, 135, 84, 0.35);
+    }
+
+    /* PIE */
+    .footer {
+      text-align: center;
+      margin-top: 35px;
+      padding-top: 15px;
+      border-top: 1px dashed #bbb;
+      color: #666;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="wrapper">
+
+    <div class="header">
+      <img src="/static/logo.png" alt="Logo">
+      <h1>Factura Electrónica</h1>
+    </div>
+
+    <div class="info">
+      <p><span>Número:</span> {{id}}</p>
+      <p><span>Fecha:</span> {{fecha}}</p>
+      <p><span>Cliente:</span> {{cliente}}</p>
+      <p><span>Correo:</span> {{correo}}</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Descripción</th>
+          <th>Cant.</th>
+          <th>Precio</th>
+          <th>Subtotal</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for d in detalles %}
+        <tr>
+          <td>{{d.descripcion}}</td>
+          <td>{{d.cantidad}}</td>
+          <td>${{d.precio}}</td>
+          <td>${{d.subtotal}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="total-box">
+      <span>Total: ${{total}}</span>
+    </div>
+
+    <div class="footer">
+      Gracias por confiar en nosotros.  
+      <br> SERVILAVADORA S.A.S. – Sistema de Facturación
+    </div>
+
+  </div>
+
+</body>
+</html>
+
     """)
 
     return HTMLResponse(html_template.render(

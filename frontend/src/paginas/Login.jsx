@@ -84,7 +84,7 @@ export default function Login() {
         if (rol === "administrador" || rol.includes("admin")) {
           navigate("/admin/inicio");
         } else if (rol === "cliente" || rol.includes("cliente")) {
-          navigate("/cliente/perfil");
+          navigate("/cliente/inicio");
         } else {
           navigate("/");
         }
