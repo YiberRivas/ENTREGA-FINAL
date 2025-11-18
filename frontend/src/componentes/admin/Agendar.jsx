@@ -594,68 +594,125 @@ const Agendar = () => {
   // ============================================================================
   // PAGO Y FACTURACIÓN
   // ============================================================================
-  const procesarPago = async () => {
-    if (!facturaSeleccionada?.factura?.id_factura) {
-      Swal.fire("Error", "Factura no encontrada para procesar pago", "error");
-      return;
-    }
+const procesarPago = async () => {
+  if (!facturaSeleccionada?.factura?.id_factura) {
+    Swal.fire("Error", "Factura no encontrada para procesar pago", "error");
+    return;
+  }
 
-    setProcesandoPago(true);
-    const idFactura = facturaSeleccionada.factura.id_factura;
-    const forma_pago_id = metodoPagoSeleccionado;
+  setProcesandoPago(true);
+  const idFactura = facturaSeleccionada.factura.id_factura;
+  const id_forma_pago = metodoPagoSeleccionado;
+  const monto = facturaSeleccionada.factura.total;
 
-    try {
-      // 1) Intentar POST /pagos/ (si existe)
+  try {
+    // Preparar datos del pago en el formato que espera el backend
+    const datosPago = {
+      id_factura: parseInt(idFactura),
+      id_forma_pago: parseInt(id_forma_pago),
+      monto: parseFloat(monto)
+    };
+
+    console.log("🟡 Enviando pago al backend:", datosPago);
+
+    // 1) Registrar el pago en la base de datos
+    const response = await api.post("/pagos/", datosPago, {
+      timeout: 10000,
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (response.status === 200 || response.status === 201) {
+      console.log("🟢 Pago registrado exitosamente:", response.data);
+      
+      // 2) Opcional: Actualizar el estado de la factura a "pagada"
       try {
-        await api.post("/pagos/", {
-          factura_id: idFactura,
-          forma_pago_id,
-          total: facturaSeleccionada.factura.total
-        });
         await api.put(`/facturas/${idFactura}/estado?nuevo_estado=pagada`);
-
-        Swal.fire({
-          icon: "success",
-          title: "Pago registrado",
-          text: "El pago fue registrado correctamente",
-          timer: 1500,
-          showConfirmButton: false
-        });
-
-        setShowPagoModal(false);
-        setFacturaSeleccionada(null);
-        setQrPagoUrl(null);
-        setRefreshFlag(f => f + 1);
-        return;
-      } catch (errPost) {
-        console.warn("POST /pagos falló:", errPost);
+        console.log("🟢 Estado de factura actualizado a 'pagada'");
+      } catch (errFactura) {
+        console.warn("🟡 No se pudo actualizar el estado de la factura:", errFactura);
+        // No es crítico si falla, continuamos
       }
 
-      // 2) Fallback: PUT /facturas/{id}/estado?nuevo_estado=pagada&forma_pago_id=X
-      try {
-        await api.put(`/facturas/${idFactura}/estado?nuevo_estado=pagada&forma_pago_id=${forma_pago_id}`);
-        
-        Swal.fire({
-          icon: "success",
-          title: "Pago registrado",
-          text: "Estado de la factura actualizado a 'pagada'",
-          timer: 1500,
-          showConfirmButton: false
-        });
+      Swal.fire({
+        icon: "success",
+        title: "¡Pago exitoso!",
+        html: `
+          <div class="text-start">
+            <p>El pago se ha registrado correctamente en la base de datos</p>
+            <div class="mt-2 p-2 bg-light rounded">
+              <small><strong>Detalles:</strong></small><br/>
+              <small>Factura: #${idFactura}</small><br/>
+              <small>Monto: $${monto}</small><br/>
+              <small>Método: ${METODOS_PAGO.find(m => m.id === id_forma_pago)?.nombre}</small>
+            </div>
+          </div>
+        `,
+        timer: 3000,
+        showConfirmButton: false
+      });
 
-        setShowPagoModal(false);
-        setFacturaSeleccionada(null);
-        setQrPagoUrl(null);
-        setRefreshFlag(f => f + 1);
-      } catch (errPut) {
-        console.error("PUT /facturas falló:", errPut);
-        Swal.fire("Error", "No se pudo registrar el pago. Intenta desde el backend.", "error");
-      }
-    } finally {
-      setProcesandoPago(false);
+      // Cerrar modal y actualizar interfaz
+      setShowPagoModal(false);
+      setFacturaSeleccionada(null);
+      setQrPagoUrl(null);
+      setRefreshFlag(f => f + 1);
     }
-  };
 
+  } catch (error) {
+    console.error("🔴 Error completo al procesar pago:", {
+      message: error.message,
+      code: error.code,
+      response: error.response?.data,
+      status: error.response?.status,
+      config: error.config
+    });
+    
+    let mensajeError = "No se pudo registrar el pago";
+    let detalleTecnico = error.message;
+
+    if (error.code === 'ERR_NETWORK' || error.message.includes('CORS')) {
+      mensajeError = "Error de conexión con el servidor";
+      detalleTecnico = "Problema de CORS o el servidor no está respondiendo. Verifica que el backend esté ejecutándose y tenga CORS configurado.";
+    } else if (error.response?.status === 500) {
+      mensajeError = "Error interno del servidor";
+      detalleTecnico = error.response.data?.detail || "El servidor encontró un error al procesar la solicitud. Revisa los logs del backend.";
+    } else if (error.response?.status === 404) {
+      mensajeError = "Endpoint no encontrado";
+      detalleTecnico = "La ruta /pagos/ no existe en el backend";
+    } else if (error.response?.status === 400) {
+      mensajeError = "Datos de pago inválidos";
+      detalleTecnico = error.response.data?.detail || JSON.stringify(error.response.data);
+    }
+
+    Swal.fire({
+      icon: "error",
+      title: "Error al procesar pago",
+      html: `
+        <div class="text-start">
+          <p class="fw-bold">${mensajeError}</p>
+          <div class="mt-2 p-2 bg-light rounded">
+            <small class="text-muted">Detalle técnico:</small><br/>
+            <code class="small">${detalleTecnico}</code>
+          </div>
+          ${error.code === 'ERR_NETWORK' ? `
+            <div class="mt-2">
+              <small class="text-warning">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                Posible solución: Configura CORS en tu backend FastAPI
+              </small>
+            </div>
+          ` : ''}
+        </div>
+      `,
+      confirmButtonText: "Entendido",
+      width: 600
+    });
+  } finally {
+    setProcesandoPago(false);
+  }
+};
   // Generar QR cuando se selecciona Nequi/Daviplata
   const handleMetodoPagoChange = async (nuevoMetodo) => {
     setMetodoPagoSeleccionado(parseInt(nuevoMetodo));

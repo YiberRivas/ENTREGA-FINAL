@@ -14,10 +14,8 @@ const AgendamientosPage = () => {
   const fetchAgendamientos = async () => {
     try {
       const res = await api.get("/agendamientos/");
-      console.log("✅ Agendamientos cargados:", res.data);
       setAgendamientos(res.data);
     } catch (error) {
-      console.error("❌ Error al obtener agendamientos:", error);
       Swal.fire({
         icon: "error",
         title: "Error al cargar datos",
@@ -46,7 +44,7 @@ const AgendamientosPage = () => {
   // ============================
   const handleEdit = async (row) => {
     const { value: estado } = await Swal.fire({
-      title: `Actualizar estado (#${row.id_agendamiento})`,
+      title: `Actualizar estado`,
       input: "select",
       inputOptions: {
         pendiente: "Pendiente",
@@ -61,14 +59,10 @@ const AgendamientosPage = () => {
     if (!estado) return;
 
     try {
-      await api.put(`/agendamientos/${row.id_agendamiento}/estado`, {
-        estado,
-      });
-
+      await api.put(`/agendamientos/${row.id_real}/estado`, { estado });
       Swal.fire("Actualizado", "El estado fue actualizado.", "success");
       fetchAgendamientos();
     } catch (error) {
-      console.error("Error al actualizar estado:", error);
       Swal.fire("Error", "No se pudo actualizar el estado.", "error");
     }
   };
@@ -79,47 +73,45 @@ const AgendamientosPage = () => {
   const handleDelete = async (row) => {
     const confirm = await Swal.fire({
       title: "¿Eliminar agendamiento?",
-      text: `Se eliminará el agendamiento #${row.id_agendamiento}`,
+      text: `Se eliminará el agendamiento seleccionado`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#dc3545",
       cancelButtonColor: "#6c757d",
       confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
     });
 
     if (!confirm.isConfirmed) return;
 
     try {
-      await api.delete(`/agendamientos/${row.id_agendamiento}`);
+      await api.delete(`/agendamientos/${row.id_real}`);
       Swal.fire("Eliminado", "El agendamiento fue eliminado.", "success");
       fetchAgendamientos();
     } catch (error) {
-      console.error("Error al eliminar:", error);
       Swal.fire("Error", "No se pudo eliminar el agendamiento.", "error");
     }
   };
 
   // ============================
-  // 🔹 Botón Iniciar Servicio
+  // 🔹 Iniciar servicio
   // ============================
   const handleStart = async (row) => {
     try {
-      await api.post(`/agendamientos/iniciar/${row.id_agendamiento}`);
-      Swal.fire("Iniciado", "El servicio fue iniciado.", "success");
+      await api.post(`/agendamientos/iniciar/${row.id_real}`);
+      Swal.fire("Iniciado", "El servicio comenzó.", "success");
       fetchAgendamientos();
     } catch (error) {
-      Swal.fire("Error", "No se pudo iniciar el agendamiento.", "error");
+      Swal.fire("Error", "No se pudo iniciar el servicio.", "error");
     }
   };
 
   // ============================
-  // 🔹 Botón Finalizar Servicio
+  // 🔹 Finalizar servicio
   // ============================
   const handleFinish = async (row) => {
     try {
       await api.post(`/agendamientos/finalizar`, {
-        id_agendamiento: row.id_agendamiento,
+        id_agendamiento: row.id_real,
       });
 
       Swal.fire("Finalizado", "El servicio ha finalizado.", "success");
@@ -130,7 +122,7 @@ const AgendamientosPage = () => {
   };
 
   // ============================
-  // Render
+  // Render loading
   // ============================
   if (loading) {
     return (
@@ -141,6 +133,18 @@ const AgendamientosPage = () => {
     );
   }
 
+  // ============================
+  // 🔥 Crear tabla con ID auto-incrementable
+  // ============================
+  const tablaFormateada = agendamientos.map((a, index) => ({
+    id: index + 1, // ← NUMERO AUTOINCREMENTABLE
+    id_real: a.id_agendamiento, // ← ID REAL SOLO PARA ACCIONES (OCULTO)
+    cliente: `${a.persona?.nombres || ""} ${a.persona?.apellidos || ""}`,
+    servicio: a.servicio?.nombre_servicio || "Desconocido",
+    fecha: a.fecha,
+    estado: a.estado,
+  }));
+
   return (
     <Container fluid className="p-4">
       <h3 className="mb-4">
@@ -149,13 +153,7 @@ const AgendamientosPage = () => {
       </h3>
 
       <AgendamientosTable
-        data={agendamientos.map((a) => ({
-          id_agendamiento: a.id_agendamiento,
-          cliente: `${a.persona?.nombres || ""} ${a.persona?.apellidos || ""}`,
-          servicio: a.servicio?.nombre_servicio || "Desconocido",
-          fecha: a.fecha,
-          estado: a.estado,
-        }))}
+        data={tablaFormateada}
         onView={handleView}
         onEdit={handleEdit}
         onDelete={handleDelete}

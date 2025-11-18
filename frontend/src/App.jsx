@@ -33,7 +33,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
 
-        {/* 🔐 PRIVADAS ADMIN */}
+        {/* PRIVADAS ADMIN */}
         <Route
           path="/admin"
           element={
@@ -56,7 +56,7 @@ function App() {
           <Route path="estadisticas" element={<AdminInicio />} />
         </Route>
 
-        {/* 👤 PRIVADAS CLIENTE */}
+        {/* PRIVADAS CLIENTE */}
         <Route
           path="/cliente"
           element={
@@ -68,30 +68,22 @@ function App() {
           <Route index element={<Navigate to="inicio" replace />} />
           <Route path="inicio" element={<ClienteInicio />} />
           <Route path="perfil" element={<ClientePerfil />} />
-          
-          {/* Opción para ver el catálogo y luego Agendar */}
           <Route path="servicios" element={<ClienteServicios />} /> 
 
-          {/* Formulario para AGENDAR una nueva cita */}
           <Route path="agendar" element={<CrearAgendamiento />} /> 
-          
-          {/* Listado de servicios activos (Cancelar/Finalizar) */}
-          <Route path="mis-servicios" element={<MisAgendamientosCliente />} /> 
-          
-          {/* Historial de servicios finalizados/cancelados */}
-          <Route path="historial" element={<ClienteHistorial />} />
-          
+          <Route path="mis-servicios" element={<MisAgendamientosCliente />} />
+          <Route path="historial" element={<ClienteHistorial />} />    
           <Route path="dashboard" element={<ClienteInicio />} />
         </Route>
 
-        {/* 📱 RUTAS ESPECIALES */}
+        {/* RUTAS ESPECIALES */}
         <Route path="/soporte" element={<Inicio />} />
         <Route path="/contacto" element={<Inicio />} />
         <Route path="/acerca-de" element={<Inicio />} />
         <Route path="/terminos" element={<Inicio />} />
         <Route path="/privacidad" element={<Inicio />} />
 
-        {/* ❌ Cualquier otra ruta - Redirección inteligente */}
+        {/* Cualquier otra ruta - Redirección inteligente */}
         <Route path="*" element={<RutaNoEncontrada />} />
       </Routes>
     </BrowserRouter>

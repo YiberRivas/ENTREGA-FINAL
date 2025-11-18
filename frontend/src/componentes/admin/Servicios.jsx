@@ -159,7 +159,7 @@ const Servicios = () => {
               >
                 <thead className="table-light sticky-top" style={{ top: 0 }}>
                   <tr>
-                    <th style={{ width: "10%", position: "sticky", left: 0, background: "#f8f9fa" }}>ID</th>
+                    <th style={{ width: "10%", position: "sticky", left: 0, background: "#f8f9fa" }}>N°</th>
                     <th style={{ width: "30%" }}>Servicio</th>
                     <th style={{ width: "20%" }}>Precio Base</th>
                     <th style={{ width: "20%" }}>Duración</th>
@@ -217,29 +217,67 @@ const Servicios = () => {
             </div>
 
             {/* 🔸 Controles de paginación */}
-            {totalPages > 1 && (
-              <div className="d-flex justify-content-center mt-3">
-                <Pagination>
-                  <Pagination.Prev
+            {/* 🔸 Controles de paginación estilo Pagos */}
+              {totalPages > 1 && (
+                <div className="d-flex justify-content-center mt-3">
+
+                  {/* Flecha atrás */}
+                  <Button
+                    variant="light"
                     disabled={currentPage === 1}
                     onClick={() => handlePageChange(currentPage - 1)}
-                  />
-                  {[...Array(totalPages)].map((_, i) => (
-                    <Pagination.Item
-                      key={i + 1}
-                      active={i + 1 === currentPage}
-                      onClick={() => handlePageChange(i + 1)}
-                    >
-                      {i + 1}
-                    </Pagination.Item>
-                  ))}
-                  <Pagination.Next
+                    className="mx-1"
+                  >
+                    «
+                  </Button>
+
+                  {/* Páginas dinámicas con (…) */}
+                  {[...Array(totalPages)].map((_, i) => {
+                    const page = i + 1;
+
+                    // Lógica para mostrar solo 5 páginas
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <Button
+                          key={page}
+                          variant={page === currentPage ? "info" : "light"}
+                          onClick={() => handlePageChange(page)}
+                          className="mx-1"
+                        >
+                          {page}
+                        </Button>
+                      );
+                    }
+
+                    // Mostrar puntos suspensivos
+                    if (page === currentPage - 2 || page === currentPage + 2) {
+                      return (
+                        <Button key={page} variant="light" disabled className="mx-1">
+                          …
+                        </Button>
+                      );
+                    }
+
+                    return null;
+                  })}
+
+                  {/* Flecha siguiente */}
+                  <Button
+                    variant="light"
                     disabled={currentPage === totalPages}
                     onClick={() => handlePageChange(currentPage + 1)}
-                  />
-                </Pagination>
-              </div>
-            )}
+                    className="mx-1"
+                  >
+                    »
+                  </Button>
+
+                </div>
+              )}
+
           </Container>
         )}
       </div>

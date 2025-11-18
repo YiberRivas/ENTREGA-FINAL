@@ -8,7 +8,6 @@ import {
   Form,
   Row,
   Col,
-  Pagination,
 } from "react-bootstrap";
 import Swal from "sweetalert2";
 import api from "../../api/axiosConfig";
@@ -38,20 +37,17 @@ const Usuarios = () => {
       setUsuarios(response.data);
       setFilteredUsuarios(response.data);
     } catch (error) {
-      console.error("Error al cargar usuarios:", error);
       Swal.fire({
         icon: "error",
         title: "Error",
-        text:
-          error.response?.data?.detail ||
-          "No se pudieron cargar los usuarios.",
+        text: "No se pudieron cargar los usuarios.",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔍 Filtrar usuarios según búsqueda y estado
+  // 🔍 Filtrar usuarios
   useEffect(() => {
     let filtrados = usuarios.filter((u) =>
       (u.usuario || u.username || "")
@@ -69,7 +65,7 @@ const Usuarios = () => {
     setCurrentPage(1);
   }, [busqueda, filtroActivo, usuarios]);
 
-  // 🔢 Calcular usuarios visibles por página
+  // 🔢 Cálculo de paginación
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentUsuarios = filteredUsuarios.slice(
@@ -82,42 +78,43 @@ const Usuarios = () => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
+  // 🔹 Formato de fecha
   const formatearFecha = (fecha) => {
     if (!fecha) return "No disponible";
-    try {
-      const f = new Date(fecha);
-      return f.toLocaleString("es-CO", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return "Formato inválido";
-    }
+
+    const f = new Date(fecha);
+    if (isNaN(f)) return "Formato inválido";
+
+    return f.toLocaleString("es-CO", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
+  // 🔎 Ver detalle
   const handleView = (user) => {
     setUsuarioSeleccionado(user);
     setShowModal(true);
   };
 
+  // 🗑 Eliminar
   const handleDelete = async (user) => {
     const confirm = await Swal.fire({
       icon: "warning",
       title: "¿Eliminar usuario?",
-      text: `Esto eliminará al usuario ${user.usuario || user.username}`,
+      text: `Esto eliminará al usuario ${user.usuario}`,
       showCancelButton: true,
       confirmButtonColor: "#dc3545",
       cancelButtonColor: "#6c757d",
       confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
     });
 
     if (confirm.isConfirmed) {
       try {
-        await api.delete(`/usuarios/${user.id_usuario || user.id}`);
+        await api.delete(`/usuarios/${user.id_usuario}`);
         Swal.fire("Eliminado", "El usuario fue eliminado.", "success");
         obtenerUsuarios();
       } catch (error) {
@@ -126,30 +123,26 @@ const Usuarios = () => {
     }
   };
 
-  // 🔹 Mantener 5 filas visibles aunque haya menos datos
-  const emptyRows =
-    currentUsuarios.length < itemsPerPage
-      ? Array.from({ length: itemsPerPage - currentUsuarios.length })
-      : [];
-
   return (
     <div className="d-flex" style={{ minHeight: "100vh" }}>
       <AdminSidebar />
+
       <div className="flex-grow-1 p-4" style={{ background: "#f8f9fa" }}>
         <h4 className="mb-4 text-info fw-bold">
           <i className="fas fa-users me-2"></i> Usuarios Registrados
         </h4>
 
-        {/* 🔎 Barra de búsqueda y filtro */}
+        {/* 🔎 Filtros */}
         <Row className="mb-3">
           <Col md={5}>
             <Form.Control
               type="text"
-              placeholder="Buscar por nombre de usuario..."
+              placeholder="Buscar usuario..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
             />
           </Col>
+
           <Col md={3}>
             <Form.Select
               value={filtroActivo}
@@ -160,18 +153,16 @@ const Usuarios = () => {
               <option value="inactivos">Inactivos</option>
             </Form.Select>
           </Col>
+
           <Col md={2}>
-            <Button
-              variant="info"
-              className="text-white fw-semibold"
-              onClick={obtenerUsuarios}
-            >
-              <i className="fas fa-sync-alt me-2"></i>Actualizar
+            <Button variant="info" className="text-white" onClick={obtenerUsuarios}>
+              <i className="fas fa-sync-alt me-2"></i>
+              Actualizar
             </Button>
           </Col>
         </Row>
 
-        {/* 🧾 Tabla de usuarios */}
+        {/* 🧾 Tabla */}
         {loading ? (
           <div
             className="d-flex flex-column justify-content-center align-items-center"
@@ -183,106 +174,127 @@ const Usuarios = () => {
         ) : (
           <Container fluid className="bg-white shadow-sm rounded p-3">
             <div style={{ minHeight: "400px" }}>
-              <Table
-                hover
-                responsive
-                className="align-middle"
-                style={{ tableLayout: "fixed" }}
-              >
-                <thead className="table-light sticky-top" style={{ top: 0 }}>
+              <Table hover responsive className="align-middle text-center">
+                <thead className="table-light">
                   <tr>
-                    <th style={{ width: "20%" }}>ID</th>
-                    <th style={{ width: "20%" }}>Usuario</th>
-                    <th style={{ width: "25%" }}>Activo</th>
+                    <th style={{ width: "10%" }}>N°</th>
+                    <th style={{ width: "25%" }}>Usuario</th>
+                    <th style={{ width: "20%" }}>Activo</th>
                     <th style={{ width: "25%" }}>Fecha de Creación</th>
-                    <th style={{ width: "20%" }} className="text-end">
-                      Acciones
-                    </th>
+                    <th style={{ width: "20%" }}>Acciones</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {currentUsuarios.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="text-center text-muted">
+                      <td colSpan="5" className="text-muted">
                         No hay usuarios registrados
                       </td>
                     </tr>
                   ) : (
-                    <>
-                      {currentUsuarios.map((u) => (
-                        <tr key={u.id_usuario || u.id} style={{ height: "60px" }}>
-                          <td>{u.id_usuario || u.id}</td>
-                          <td>{u.usuario || u.username}</td>
-                          <td>
-                            <span
-                              className={`badge ${
-                                u.activo ? "bg-success" : "bg-secondary"
-                              }`}
-                            >
-                              {u.activo ? "Activo" : "Inactivo"}
-                            </span>
-                          </td>
-                          <td>{formatearFecha(u.fecha_creacion)}</td>
-                          <td className="text-end">
-                            <Button
-                              variant="info"
-                              size="sm"
-                              className="me-2"
-                              onClick={() => handleView(u)}
-                            >
-                              <i className="fas fa-eye"></i>
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDelete(u)}
-                            >
-                              <i className="fas fa-trash"></i>
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                      {/* 🔹 Filas vacías para mantener la altura fija */}
-                      {emptyRows.map((_, i) => (
-                        <tr key={`empty-${i}`} style={{ height: "60px" }}>
-                          <td colSpan="5"></td>
-                        </tr>
-                      ))}
-                    </>
+                    currentUsuarios.map((u, index) => (
+                      <tr key={u.id_usuario}>
+                        {/* 🔥 Número auto-incrementable */}
+                        <td>{indexOfFirstItem + index + 1}</td>
+
+                        <td>{u.usuario}</td>
+
+                        <td>
+                          <span
+                            className={`badge ${
+                              u.activo ? "bg-success" : "bg-secondary"
+                            }`}
+                          >
+                            {u.activo ? "Activo" : "Inactivo"}
+                          </span>
+                        </td>
+
+                        <td>{formatearFecha(u.fecha_creacion)}</td>
+
+                        <td>
+                          <Button
+                            size="sm"
+                            variant="info"
+                            className="me-2"
+                            onClick={() => handleView(u)}
+                          >
+                            <i className="fas fa-eye"></i>
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => handleDelete(u)}
+                          >
+                            <i className="fas fa-trash"></i>
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </Table>
             </div>
 
-            {/* 🔸 Controles de paginación */}
+            {/* 🔥 PAGINACIÓN IGUAL A PAGOS */}
             {totalPages > 1 && (
               <div className="d-flex justify-content-center mt-3">
-                <Pagination>
-                  <Pagination.Prev
-                    disabled={currentPage === 1}
-                    onClick={() => handlePageChange(currentPage - 1)}
-                  />
-                  {[...Array(totalPages)].map((_, i) => (
-                    <Pagination.Item
-                      key={i + 1}
-                      active={i + 1 === currentPage}
-                      onClick={() => handlePageChange(i + 1)}
-                    >
-                      {i + 1}
-                    </Pagination.Item>
-                  ))}
-                  <Pagination.Next
-                    disabled={currentPage === totalPages}
-                    onClick={() => handlePageChange(currentPage + 1)}
-                  />
-                </Pagination>
+                <Button
+                  variant="light"
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  className="mx-1"
+                >
+                  «
+                </Button>
+
+                {[...Array(totalPages)].map((_, i) => {
+                  const page = i + 1;
+
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <Button
+                        key={page}
+                        variant={page === currentPage ? "info" : "light"}
+                        onClick={() => handlePageChange(page)}
+                        className="mx-1"
+                      >
+                        {page}
+                      </Button>
+                    );
+                  }
+
+                  if (page === currentPage - 2 || page === currentPage + 2) {
+                    return (
+                      <Button key={page} variant="light" disabled className="mx-1">
+                        …
+                      </Button>
+                    );
+                  }
+
+                  return null;
+                })}
+
+                <Button
+                  variant="light"
+                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  className="mx-1"
+                >
+                  »
+                </Button>
               </div>
             )}
           </Container>
         )}
       </div>
 
-      {/* 🪟 Modal de información */}
+      {/* 🔹 Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered size="md">
         <Modal.Header closeButton>
           <Modal.Title>
@@ -290,28 +302,17 @@ const Usuarios = () => {
             Información del Usuario
           </Modal.Title>
         </Modal.Header>
+
         <Modal.Body>
           {usuarioSeleccionado && (
             <>
-              <p>
-                <strong>ID:</strong>{" "}
-                {usuarioSeleccionado.id_usuario || usuarioSeleccionado.id}
-              </p>
-              <p>
-                <strong>Usuario:</strong>{" "}
-                {usuarioSeleccionado.usuario || usuarioSeleccionado.username}
-              </p>
-              <p>
-                <strong>Activo:</strong>{" "}
-                {usuarioSeleccionado.activo ? "Sí" : "No"}
-              </p>
-              <p>
-                <strong>Fecha de creación:</strong>{" "}
-                {formatearFecha(usuarioSeleccionado.fecha_creacion)}
-              </p>
+              <p><strong>Usuario:</strong> {usuarioSeleccionado.usuario}</p>
+              <p><strong>Activo:</strong> {usuarioSeleccionado.activo ? "Sí" : "No"}</p>
+              <p><strong>Fecha creación:</strong> {formatearFecha(usuarioSeleccionado.fecha_creacion)}</p>
             </>
           )}
         </Modal.Body>
+
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>
             Cerrar

@@ -1,25 +1,44 @@
+.sidebar-cliente {
+  background-color: #5690e7 !important;
+  color: white;
+  transition: all 0.3s ease;
+}
 
-
-.menu-item{
-  display: flex;
-  align-items: center;
-  padding: 10px 15px;
-  color: var(--sl-text);
-  text-decoration: none;
+.sidebar-cliente .menu-item {
+  color: white;
+  padding: 12px 15px;
+  width: 100%;
+  display: block;
+  font-weight: 500;
   border-radius: 8px;
-  transition: background-color 0.3s, color 0.3s;
-  
+  transition: all 0.2s ease-in-out;
 }
 
-.menu-item:hover{
-  background-color: var(--sl-light-blue);
-  color: var(--sl-primary);
+/* Hover más visible */
+.sidebar-cliente .menu-item:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateX(5px);
+  color: #ffffff;
 }
 
-.menu{
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 20px;
-  
+/* Activo más resaltado */
+.sidebar-cliente .menu-item.active {
+  background: rgba(0, 0, 0, 0.35);
+  font-weight: 700;
+  border-left: 4px solid #ffffff;
+  padding-left: 12px;
+}
+
+/* Íconos blancos siempre */
+.sidebar-cliente .menu-item i {
+  color: white;
+}
+
+/* Hover en ícono también */
+.sidebar-cliente .menu-item:hover i {
+  color: #fff;
+}
+
+.sidebar-cliente .navbar-brand {
+  color: white !important;
 }

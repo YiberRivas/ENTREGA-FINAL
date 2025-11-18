@@ -82,19 +82,7 @@ const AdminSidebar = () => {
           </NavLink>
         ))}
 
-        <Nav.Link
-          as="button"
-          onClick={handleLogout}
-          className="text-white text-start mb-2 rounded logout-btn"
-          style={{
-            backgroundColor: "transparent",
-            border: "none",
-            padding: "10px 12px",
-            transition: "all 0.3s ease",
-          }}
-        >
-          <i className="fas fa-sign-out-alt me-2"></i> Salir
-        </Nav.Link>
+        
       </Nav>
 
       <style>{`

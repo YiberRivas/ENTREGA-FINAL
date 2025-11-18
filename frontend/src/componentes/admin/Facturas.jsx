@@ -199,7 +199,7 @@ const Facturas = () => {
                     >
                       <thead className="table-light sticky-top" style={{ top: 0 }}>
                         <tr>
-                          <th style={{ width: "8%", position: "sticky", left: 0, background: "#f8f9fa" }}>ID</th>
+                          <th style={{ width: "8%", position: "sticky", left: 0, background: "#f8f9fa" }}>N°</th>
                           <th style={{ width: "20%" }}>Cliente</th>
                           <th>Correo</th>
                           <th style={{ width: "12%" }}>Total</th>
@@ -225,7 +225,7 @@ const Facturas = () => {
                                   className="fw-bold"
                                   style={{ position: "sticky", left: 0, background: "#fff" }}
                                 >
-                                  #{f.id_factura}
+                                  {f.id_factura}
                                 </td>
                                 <td className="text-start">{getNombreCliente(f)}</td>
                                 <td><small>{f.persona?.correo || "N/A"}</small></td>
